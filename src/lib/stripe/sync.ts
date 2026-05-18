@@ -1,6 +1,7 @@
 import "server-only";
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { grantReferralReward } from "@/lib/referrals.server";
 import { planFromPriceId, type StripePlanKey } from "@/lib/stripe/config";
 
 interface SubscriptionPeriodFields {
@@ -117,6 +118,17 @@ export async function syncSubscriptionToSupabase({
   if (profileError) {
     console.error("[stripe sync] user_profiles plan update failed:", profileError);
     throw profileError;
+  }
+
+  if (plan === "pro" || plan === "max") {
+    try {
+      await grantReferralReward(admin, {
+        referredUserId: userId,
+        plan,
+      });
+    } catch (referralError) {
+      console.error("[stripe sync] referral reward failed:", referralError);
+    }
   }
 
   console.log(

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import {
   CreditCard,
   Folder,
+  Gift,
   Home,
   LogOut,
   Menu,
@@ -42,6 +43,7 @@ const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/generate", label: "Generate App", icon: Sparkles },
   { href: "/projects", label: "My Projects", icon: Folder },
+  { href: "/referrals", label: "Referrals", icon: Gift },
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -194,10 +196,14 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
             className="block rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 transition hover:bg-white/[0.05]"
           >
             <div className="text-[10px] uppercase tracking-wider text-text-muted">
-              Daily AI Credits
+              Available AI Credits
             </div>
             <div className="mt-1 text-sm font-semibold text-white">
-              {usage.remainingCredits.toLocaleString()} left
+              {usage.totalAvailableCredits.toLocaleString()} available
+            </div>
+            <div className="mt-1 text-[11px] text-text-secondary">
+              {usage.dailyRemainingCredits.toLocaleString()} daily +{" "}
+              {usage.bonusCredits.toLocaleString()} bonus
             </div>
             <div className="mt-1 text-[11px] text-text-secondary">
               ${usage.estimatedCostUsd.toFixed(3)} used today • resets in {resetCountdown}

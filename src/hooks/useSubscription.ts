@@ -17,6 +17,8 @@ export interface UseSubscriptionResult {
   dailyCreditsLimit: number;
   dailyCreditsUsed: number;
   dailyCreditsRemaining: number;
+  bonusCredits: number;
+  totalAvailableCredits: number;
 }
 
 export function useSubscription(): UseSubscriptionResult {
@@ -63,7 +65,11 @@ export function useSubscription(): UseSubscriptionResult {
   const plan: Plan = user?.plan ?? "free";
   const dailyCreditsLimit = usage?.limitCredits ?? getPlanDailyCreditLimit(plan);
   const dailyCreditsUsed = usage?.usedCredits ?? 0;
-  const dailyCreditsRemaining = usage?.remainingCredits ?? dailyCreditsLimit;
+  const dailyCreditsRemaining =
+    usage?.dailyRemainingCredits ?? dailyCreditsLimit;
+  const bonusCredits = usage?.bonusCredits ?? 0;
+  const totalAvailableCredits =
+    usage?.totalAvailableCredits ?? dailyCreditsRemaining + bonusCredits;
 
   return {
     subscription: storeSubscription,
@@ -75,5 +81,7 @@ export function useSubscription(): UseSubscriptionResult {
     dailyCreditsLimit,
     dailyCreditsUsed,
     dailyCreditsRemaining,
+    bonusCredits,
+    totalAvailableCredits,
   };
 }

@@ -63,6 +63,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Generator: prompt form, template/color/platform options, staged generation progress UI, `/api/generate` staged NDJSON route, generated file preview, provider-aware follow-up AI chat route, and daily AI credit usage indicators.
 - Billing foundation: billing page, Stripe checkout route, Stripe portal route, webhook subscription sync route.
 - Manual payments: authenticated screenshot upload route, private Supabase Storage bucket flow, admin screenshot signed-URL route, pending payment tracking, and manual payment approval/rejection routes.
+- Referrals: per-user referral codes, `/referrals` dashboard page, signup referral capture/claim flow, optional referred-user signup bonus, referrer paid-upgrade rewards, and bonus credit tracking via `user_credit_adjustments`.
 - Supabase foundation: browser client, server client, service-role admin client, schema, seed data, RLS policies.
 - GitHub export: authenticated OAuth connect/callback routes, sanitized GitHub status route, repo list/create routes, server-side project export route, project Deploy modal flow, and export metadata tracking.
 
@@ -75,6 +76,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Privileged writes: service-role admin client is only used server-side for generation persistence, daily AI usage tracking, Stripe webhook sync, auth callback cleanup/IP updates, and request/session protection around AI calls.
 - AI provider layer: generation and edit routes now call a provider abstraction (`src/lib/ai`) that can be swapped to Gemini, Claude, OpenAI, or DeepSeek later without rewriting route logic.
 - Daily credit system: Qorvex now tracks prompt tokens, completion tokens, total tokens, estimated API cost, request counts, and active AI sessions in `daily_ai_usage` rows keyed by UTC date instead of limiting users by project count or weekly generation counters.
+- Bonus credit system: referral bonuses are stored separately in `user_credit_adjustments`, shown alongside daily credits in the dashboard/sidebar/generator UI, and consumed only after the current day's plan credits are exhausted.
 - AI: `/api/generate` now uses a staged pipeline instead of one giant completion. Stage 1 creates a compact app plan, Stage 2 expands screen specs, Stage 3 builds the file manifest, Stage 4 assembles project files in batches, and Stage 5 prepares preview metadata before persisting the project.
 - Token strategy: prompt text is compacted and deduplicated, features are capped and normalized, large requests show a staged-generation notice, model calls are JSON-first with low temperature, AI stages estimate budget before running, and code is no longer requested in a single oversized response.
 - Recovery: each AI-backed stage retries once, stage calls are timeout-bounded, later-stage failures preserve completed work, and the route can return a partial project payload with warnings instead of dropping the entire generation.
@@ -85,11 +87,12 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Manual payment submit flow: `/api/manual-payments` is now excluded from the global Supabase proxy matcher so multipart uploads do not pass through auth middleware, the route verifies auth once and then uses the service-role admin client for storage/database writes, ensures the `user_profiles` row exists before inserting into `manual_payments`, returns `{ success, paymentId, error }` JSON, and wraps cleanup in its own timeout so a failed insert can never leave the client waiting forever.
 - GitHub integration: `/api/github/connect` now starts OAuth with `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and `NEXT_PUBLIC_APP_URL`; `/api/github/callback` exchanges the code server-side and stores the token with the service-role client; `/api/github/status`, `/api/github/repos`, `/api/github/repos/create`, and `/api/projects/[id]/export/github` keep the access token server-only while letting the client connect, create/select repos, and export generated Expo files.
 - GitHub export pipeline: Qorvex exports only generated project files plus a synthesized `README.md` and `.gitignore`, validates repository ownership against the connected GitHub username, supports empty or existing repos by creating/updating a commit tree on the selected branch, updates `projects.github_repo`, and records export metadata in `deployments` plus `github_exports` when that table exists.
+- Referral pipeline: `/signup?ref=CODE` stores the referral code in cookie/local storage, the auth callback claims it server-side, the referred user can receive a one-time signup bonus, and confirmed Pro/Max upgrades trigger idempotent referrer rewards through the same server helper from Stripe sync and manual payment approval.
 
 ## Health check results
 
-- `npm run build`: passing (verified 2026-05-18 after Dialog/Settings rewrite).
-- `npm run lint`: passing (verified 2026-05-18 after Dialog/Settings rewrite).
+- `npm run build`: passing (verified 2026-05-18 after referral rollout).
+- `npm run lint`: passing (verified 2026-05-18 after referral rollout).
 - `npm run dev`: app starts. An existing dev server was already listening on `localhost:3000`; the app returned HTTP 200.
 - `/api/auth/signout`: verified on the running dev server. POST returns `{"success":true}` and the client now redirects to `/login` after the server clears auth cookies.
 - `/api/projects/delete-error-projects`: verified on the running dev server. Unauthenticated requests now return clear JSON `{"success":false,"error":"Unauthorized"}` instead of hanging.
@@ -97,6 +100,10 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `/api/projects/[id]/download`: implemented for generated project export. Unauthenticated access is blocked server-side; authenticated users receive a downloadable JSON export of real generated files.
 - `/api/generate`: route is reachable and correctly returns HTTP 401 without an authenticated session. A true end-to-end authenticated generation run was not executed because it would require a real/test user session and would create Supabase rows plus call the configured Anthropic backend.
 - `/api/usage`: implemented. Authenticated users can now fetch their current daily AI credit snapshot, remaining balance, estimated cost, and UTC reset time for frontend indicators.
+- `/api/referrals/me`: implemented. Authenticated users can fetch their referral code, referral link, stats, recent referrals, and current referred-user status.
+- `/api/referrals/claim-signup`: implemented. Authenticated users can safely claim a stored referral code server-side after signup without trusting client reward amounts.
+- `/api/referrals/grant-reward`: implemented as an admin/internal route. Reward amounts are calculated server-side from the upgraded plan and duplicate rewards are blocked.
+- `/api/referrals/status`: implemented. Authenticated users can fetch whether they were referred and whether their signup bonus has already been granted.
 - `/api/manual-payments`: implemented. Manual payment submission now goes through an authenticated server route with a 60 second screenshot upload timeout, server-side image optimization, friendly validation errors, and guaranteed loading-state cleanup in the modal client.
 - Manual payment client flow: the billing modal now logs submit state in the browser console, aborts the request after 65 seconds, shows readable failure toasts, refreshes `/billing` on success so the pending-payment banner appears immediately, closes the modal, and always clears the `Submitting...` state in `finally`.
 - GitHub routes: build-verified routes now include `/api/github/connect`, `/api/github/callback`, `/api/github/status`, `/api/github/repos`, `/api/github/repos/create`, and `/api/projects/[id]/export/github`.
@@ -127,17 +134,22 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `payment-screenshots` bucket: upload paths are `auth.uid()/orderId/timestamp-filename.ext`. The required private-bucket insert policy is in `supabase/migration_manual_payments.sql`; service-role admin reads continue to bypass RLS through the server-side screenshot route.
 - `github_connections`: schema and migration now remove direct user `select` access so GitHub access tokens stay server-only. Apply `supabase/migration_github_export.sql` remotely to enforce that live.
 - `github_exports`: optional export metadata table added in schema/migration so GitHub repo URL, branch, and commit SHA can be persisted per export without polluting app version history.
+- `referral_codes`: RLS enabled. Users can read their own code; code creation/backfill happens server-side.
+- `referrals`: RLS enabled. Users can read referrals where they are the referrer or referred user; reward/status writes are server-side only.
+- `user_credit_adjustments`: RLS enabled. Users can read their own bonus-credit adjustments; writes happen through server-side reward/usage flows.
 
 ## Remaining bugs / risks
 
 - Full authenticated `/api/generate` verification still needs a test account/session or explicit approval to create one.
 - The new `daily_ai_usage` table and generation token columns require the SQL migration (`supabase/migration_daily_ai_credits.sql`) to be applied in the remote Supabase project before production rollout.
+- The referral rollout requires `supabase/migration_referrals.sql` to be applied in the remote Supabase project before `/referrals`, signup claims, and paid-upgrade rewards can work in production.
 - The GitHub rollout needs `supabase/migration_github_export.sql` applied remotely so `github_connections` no longer exposes tokens via old `select` policies and `github_exports` can persist export metadata.
 - The current staged code generator uses a deterministic Expo template driven by AI-produced plan/screen specs. It is much more reliable for large prompts, but future quality work should keep enriching the generated component library and screen templates.
 - Project edit chat currently uses compact project context plus targeted file snippets instead of the full codebase. This is more reliable for everyday edits, but very large cross-cutting refactors may still need a broader file-selection strategy later.
 - Browser click-through verification for authenticated project detail editing, download export, deploy modals, and live preview switching still needs a real interactive session. The route-level and build-level checks are complete.
 - Browser click-through verification for the project card Delete dialog (open menu → Delete → Cancel/Delete) and the /settings Profile save round-trip (full name + language persists across refresh) still needs a real signed-in session. The component, build, and lint level checks are complete.
 - Stripe checkout/portal/webhook cannot fully work until Stripe environment variables are configured.
+- A live referral smoke test still needs one signed-in referrer account, one fresh invited account, and one confirmed Pro/Max upgrade path to verify the full reward loop against the remote database.
 - GitHub OAuth/push cannot fully work until GitHub environment variables are configured.
 - A full GitHub connect/create/export/re-export smoke test still needs a real signed-in browser session plus valid GitHub OAuth credentials; lint/build and route wiring are complete.
 - `supabase/schema.sql` has been inspected locally, but live Supabase policy drift has not been checked against the remote database.
@@ -147,6 +159,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 
 - Create a safe test account workflow or seed-only local Supabase path for repeatable authenticated `/api/generate` smoke tests.
 - Apply `supabase/migration_daily_ai_credits.sql` remotely and verify the new daily usage rows, generation token columns, and RLS policy behavior against the live database.
+- Apply `supabase/migration_referrals.sql` remotely and verify referral code backfill, signup claims, signup bonuses, and paid-upgrade reward grants against the live database.
 - Add a server-side usage summary card to billing so the new daily AI credit metrics are visible there even before client hydration.
 - Expand the staged file generator with more domain-specific components so finance, fitness, restaurant, commerce, and travel apps diverge even further in their generated code.
 - Add a dedicated project-edit route alias if we later want `/api/projects/[id]/chat` semantics without changing the current working `/api/generate/chat` flow.

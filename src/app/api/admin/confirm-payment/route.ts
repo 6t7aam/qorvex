@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { grantReferralReward } from "@/lib/referrals.server";
 import { withTimeout } from "@/lib/with-timeout";
 import { requireAdmin } from "@/lib/admin";
 import type { ManualPayment } from "@/types";
@@ -129,6 +130,15 @@ export async function POST(request: Request) {
       },
       { onConflict: "user_id" },
     );
+
+    try {
+      await grantReferralReward(sb, {
+        referredUserId: payment.user_id,
+        plan: payment.plan,
+      });
+    } catch (referralError) {
+      console.error("[admin/confirm-payment] referral reward failed:", referralError);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

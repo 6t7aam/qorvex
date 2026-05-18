@@ -1,4 +1,7 @@
+import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import { REFERRAL_COOKIE_NAME } from "@/lib/referrals";
+import { claimReferralSignup, ensureReferralCode } from "@/lib/referrals.server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getClientIP, hashIP } from "@/lib/ip-hash";
 import { isDisposableEmail } from "@/lib/email-validation";
@@ -14,6 +17,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  const cookieStore = await cookies();
 
   if (error) {
     return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
@@ -32,12 +36,12 @@ export async function GET(request: NextRequest) {
 
   // If this is a new user signup, capture IP hash for anti-abuse tracking
   if (data.user) {
+    const admin = createAdminClient();
     const clientIP = getClientIP(request.headers);
     if (clientIP) {
       const ipHash = hashIP(clientIP);
 
       // Update user metadata with IP hash so the trigger can use it
-      const admin = createAdminClient();
       await admin.auth.admin.updateUserById(data.user.id, {
         user_metadata: {
           ...data.user.user_metadata,
@@ -51,6 +55,23 @@ export async function GET(request: NextRequest) {
         .update({ ip_hash: ipHash })
         .eq("id", data.user.id)
         .is("ip_hash", null);
+    }
+
+    try {
+      await ensureReferralCode(admin, data.user.id);
+      const pendingReferralCode = cookieStore.get(REFERRAL_COOKIE_NAME)?.value;
+      if (pendingReferralCode) {
+        const claimResult = await claimReferralSignup(admin, {
+          referredUserId: data.user.id,
+          referralCode: pendingReferralCode,
+        });
+        if (!claimResult.success) {
+          console.warn("[auth callback] referral claim skipped:", claimResult.error);
+        }
+        cookieStore.delete(REFERRAL_COOKIE_NAME);
+      }
+    } catch (referralError) {
+      console.error("[auth callback] referral handling failed:", referralError);
     }
   }
 

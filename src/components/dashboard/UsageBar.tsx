@@ -3,6 +3,9 @@ import { formatResetCountdown } from "@/lib/ai-credits";
 interface UsageBarProps {
   usedCredits: number;
   limitCredits: number;
+  dailyRemainingCredits: number;
+  bonusCredits: number;
+  totalAvailableCredits: number;
   estimatedCostUsd: number;
   resetAt: string;
   plan?: "free" | "pro" | "max";
@@ -11,6 +14,9 @@ interface UsageBarProps {
 export function UsageBar({
   usedCredits,
   limitCredits,
+  dailyRemainingCredits,
+  bonusCredits,
+  totalAvailableCredits,
   estimatedCostUsd,
   resetAt,
   plan = "free",
@@ -28,10 +34,12 @@ export function UsageBar({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="text-sm font-medium text-white">
-            {usedCredits.toLocaleString()} of {limitCredits.toLocaleString()} daily AI credits used
+            {totalAvailableCredits.toLocaleString()} AI credits available
           </div>
           <div className="mt-1 text-xs text-text-muted">
-            {plan.toUpperCase()} plan • resets in {formatResetCountdown(resetAt)}
+            {plan.toUpperCase()} plan • {dailyRemainingCredits.toLocaleString()} daily +{" "}
+            {bonusCredits.toLocaleString()} bonus • resets in{" "}
+            {formatResetCountdown(resetAt)}
           </div>
         </div>
         <div className="text-left sm:text-right">
@@ -43,6 +51,28 @@ export function UsageBar({
           </div>
         </div>
       </div>
+
+      <div className="mt-4 grid gap-3 text-xs sm:grid-cols-3">
+        <div className="rounded-xl bg-white/[0.03] px-3 py-2">
+          <div className="text-text-muted">Daily remaining</div>
+          <div className="mt-1 font-semibold text-white">
+            {dailyRemainingCredits.toLocaleString()}
+          </div>
+        </div>
+        <div className="rounded-xl bg-white/[0.03] px-3 py-2">
+          <div className="text-text-muted">Bonus credits</div>
+          <div className="mt-1 font-semibold text-white">
+            {bonusCredits.toLocaleString()}
+          </div>
+        </div>
+        <div className="rounded-xl bg-white/[0.03] px-3 py-2">
+          <div className="text-text-muted">Used today</div>
+          <div className="mt-1 font-semibold text-white">
+            {usedCredits.toLocaleString()} / {limitCredits.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.04]">
         <div
           className={`h-full rounded-full transition-all duration-500 ${barColor}`}

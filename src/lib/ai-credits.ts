@@ -43,6 +43,9 @@ export interface DailyCreditSnapshot {
   plan: Plan;
   limitCredits: number;
   usedCredits: number;
+  dailyRemainingCredits: number;
+  bonusCredits: number;
+  totalAvailableCredits: number;
   remainingCredits: number;
   promptTokens: number;
   completionTokens: number;

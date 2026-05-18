@@ -17,7 +17,8 @@ export function BillingStatus() {
     usage.limitCredits > 0
       ? Math.min(100, Math.round((usage.usedCredits / usage.limitCredits) * 100))
       : 0;
-  const outOfRoom = usage.remainingCredits <= 0;
+  const totalAvailableCredits = usage.totalAvailableCredits;
+  const outOfRoom = totalAvailableCredits <= 0;
 
   if (isMax) {
     return (
@@ -27,7 +28,8 @@ export function BillingStatus() {
           Max plan
         </div>
         <div className="mt-1 text-xs text-text-secondary">
-          {usage.remainingCredits.toLocaleString()} daily credits left • resets in {resetCountdown}
+          {totalAvailableCredits.toLocaleString()} available •{" "}
+          {usage.bonusCredits.toLocaleString()} bonus • resets in {resetCountdown}
         </div>
       </div>
     );
@@ -41,7 +43,8 @@ export function BillingStatus() {
           Pro plan
         </div>
         <div className="mt-1 text-xs text-text-secondary">
-          {usage.remainingCredits.toLocaleString()} credits remaining today
+          {totalAvailableCredits.toLocaleString()} available •{" "}
+          {usage.dailyRemainingCredits.toLocaleString()} daily left
         </div>
       </div>
     );
@@ -51,20 +54,18 @@ export function BillingStatus() {
     <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
       <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
         <Zap className="h-3.5 w-3.5" />
-        Free plan
+        {plan === "free" ? "Free plan" : "Plan credits"}
       </div>
-      <div className="mt-1 flex items-baseline justify-between text-xs text-text-secondary">
-        <span>
-          {usage.usedCredits.toLocaleString()} / {usage.limitCredits.toLocaleString()} used
-        </span>
-        {outOfRoom && (
+      <div className="mt-1 flex items-baseline justify-between gap-3 text-xs text-text-secondary">
+        <span>{totalAvailableCredits.toLocaleString()} available</span>
+        {outOfRoom ? (
           <Link
             href="/billing"
             className="text-[10px] font-semibold uppercase tracking-wider text-amber-300 transition hover:text-amber-200"
           >
             Upgrade
           </Link>
-        )}
+        ) : null}
       </div>
       <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.06]">
         <div
@@ -78,14 +79,18 @@ export function BillingStatus() {
           style={{ width: `${percent}%` }}
         />
       </div>
-      {plan === "free" && !outOfRoom && (
+      <div className="mt-2 text-[10px] text-text-muted">
+        {usage.usedCredits.toLocaleString()} / {usage.limitCredits.toLocaleString()} daily
+        used • {usage.bonusCredits.toLocaleString()} bonus credits
+      </div>
+      {plan === "free" && !outOfRoom ? (
         <Link
           href="/billing"
           className="mt-2 block text-[10px] font-semibold uppercase tracking-wider text-violet-300 transition hover:text-violet-200"
         >
           More daily credits →
         </Link>
-      )}
+      ) : null}
     </div>
   );
 }

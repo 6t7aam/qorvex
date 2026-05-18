@@ -5,6 +5,7 @@ const PROTECTED_PREFIXES = [
   "/dashboard",
   "/generate",
   "/projects",
+  "/referrals",
   "/settings",
   "/billing",
 ];

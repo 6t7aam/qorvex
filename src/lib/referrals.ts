@@ -1,0 +1,4 @@
+export const REFERRAL_COOKIE_NAME = "qorvex_referral_code";
+export const REFERRAL_SIGNUP_BONUS_CREDITS = 2000;
+export const REFERRAL_PRO_REWARD_CREDITS = 10000;
+export const REFERRAL_MAX_REWARD_CREDITS = 30000;

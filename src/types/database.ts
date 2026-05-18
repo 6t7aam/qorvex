@@ -18,6 +18,36 @@ export interface UserProfile {
   updated_at: string;
 }
 
+export interface ReferralCode {
+  id: string;
+  user_id: string;
+  code: string;
+  created_at: string;
+}
+
+export interface Referral {
+  id: string;
+  referrer_user_id: string;
+  referred_user_id: string;
+  referral_code: string;
+  status: "signed_up" | "upgraded" | "rewarded";
+  referred_plan: "pro" | "max" | null;
+  signup_bonus_granted: boolean;
+  reward_credits: number;
+  created_at: string;
+  upgraded_at: string | null;
+  reward_granted_at: string | null;
+}
+
+export interface UserCreditAdjustment {
+  id: string;
+  user_id: string;
+  amount: number;
+  reason: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface ProjectColors {
   primary: string;
   secondary: string;

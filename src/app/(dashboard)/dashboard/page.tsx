@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   Crown,
   Folder,
-  Rocket,
   Sparkles,
   Zap,
   type LucideIcon,
@@ -133,7 +132,9 @@ export default async function DashboardPage() {
     "there";
 
   const plan = profile?.plan ?? "free";
-  const remainingCredits = usage?.remainingCredits ?? 0;
+  const dailyRemainingCredits = usage?.dailyRemainingCredits ?? 0;
+  const bonusCredits = usage?.bonusCredits ?? 0;
+  const totalAvailableCredits = usage?.totalAvailableCredits ?? 0;
 
   const stats: {
     label: string;
@@ -148,18 +149,23 @@ export default async function DashboardPage() {
       accent: "violet",
     },
     {
-      label: "Daily AI Credits",
-      value: usage ? `${remainingCredits.toLocaleString()} left` : "--",
+      label: "Daily Credits",
+      value: usage ? dailyRemainingCredits.toLocaleString() : "--",
       icon: Zap,
       accent: "cyan",
     },
     {
-      label: "Plan",
-      value: plan.toUpperCase(),
-      icon: Crown,
+      label: "Bonus Credits",
+      value: usage ? bonusCredits.toLocaleString() : "--",
+      icon: Sparkles,
       accent: "violet",
     },
-    { label: "Apps Deployed", value: "0", icon: Rocket, accent: "cyan" },
+    {
+      label: "Total Available",
+      value: usage ? totalAvailableCredits.toLocaleString() : "--",
+      icon: Crown,
+      accent: "cyan",
+    },
   ];
 
   return (
@@ -199,6 +205,9 @@ export default async function DashboardPage() {
           <UsageBar
             usedCredits={usage.usedCredits}
             limitCredits={usage.limitCredits}
+            dailyRemainingCredits={usage.dailyRemainingCredits}
+            bonusCredits={usage.bonusCredits}
+            totalAvailableCredits={usage.totalAvailableCredits}
             estimatedCostUsd={usage.estimatedCostUsd}
             resetAt={usage.resetAt}
             plan={plan}

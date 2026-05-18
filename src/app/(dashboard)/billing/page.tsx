@@ -42,6 +42,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   let profile: UserProfile | null = null;
   let subscription: Subscription | null = null;
   let pendingPayment: ManualPayment | null = null;
+  let wasReferred = false;
   let userId: string | null = null;
 
   if (supabaseUrl && supabaseAnonKey) {
@@ -55,6 +56,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         { data: profileRow },
         { data: subRow },
         { data: pendingRow },
+        { data: referralRow },
       ] = await Promise.all([
         supabase
           .from("user_profiles")
@@ -74,10 +76,16 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle<ManualPayment>(),
+        supabase
+          .from("referrals")
+          .select("id")
+          .eq("referred_user_id", user.id)
+          .maybeSingle<{ id: string }>(),
       ]);
       profile = profileRow ?? null;
       subscription = subRow ?? null;
       pendingPayment = pendingRow ?? null;
+      wasReferred = !!referralRow;
     }
   }
 
@@ -141,6 +149,13 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
               generated Expo files.
             </p>
           </div>
+        </div>
+      )}
+
+      {wasReferred && plan === "free" && (
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-5 py-4 text-sm text-cyan-100">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+          Upgrade to Pro or Max to unlock more credits and support the person who invited you.
         </div>
       )}
 

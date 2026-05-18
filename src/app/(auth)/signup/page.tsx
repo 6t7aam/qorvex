@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { REFERRAL_COOKIE_NAME } from "@/lib/referrals";
 import { signInWithGoogle, signUpWithEmail } from "@/services/auth.service";
 import { validateEmail } from "@/lib/email-validation";
 
@@ -20,6 +21,7 @@ export default function SignupPage() {
 function SignupPageInner() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
+  const referralCode = searchParams.get("ref")?.trim().toUpperCase() ?? null;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,6 +33,20 @@ function SignupPageInner() {
     urlError === "disposable_email" ? "Please use a permanent email address" : null
   );
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!referralCode) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(REFERRAL_COOKIE_NAME, referralCode);
+    } catch {
+      // ignore storage issues
+    }
+
+    document.cookie = `${REFERRAL_COOKIE_NAME}=${encodeURIComponent(referralCode)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+  }, [referralCode]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,6 +147,15 @@ function SignupPageInner() {
             <p className="mt-1 text-sm text-text-secondary">
               Create your Qorvex account
             </p>
+
+            {referralCode && (
+              <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+                You were invited to Qorvex. Create your account to continue.
+                <div className="mt-1 text-xs text-cyan-200/80">
+                  Upgrade to Pro or Max and your inviter will receive bonus credits.
+                </div>
+              </div>
+            )}
 
             <button
               type="button"

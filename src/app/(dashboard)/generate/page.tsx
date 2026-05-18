@@ -137,9 +137,13 @@ function GeneratePageInner() {
   }, [upgradeRequired, setUpgradeModal]);
 
   const limitCheck = user
-    ? { allowed: usageLoading ? true : (usage?.remainingCredits ?? 0) > 0 }
+    ? { allowed: usageLoading ? true : (usage?.totalAvailableCredits ?? 0) > 0 }
     : { allowed: true };
-  const remaining = user ? usage?.remainingCredits ?? 0 : Infinity;
+  const totalAvailableCredits = user
+    ? usage?.totalAvailableCredits ?? 0
+    : Infinity;
+  const dailyRemainingCredits = usage?.dailyRemainingCredits ?? 0;
+  const bonusCredits = usage?.bonusCredits ?? 0;
   const planLimit = usage?.limitCredits ?? 0;
   const used = usage?.usedCredits ?? 0;
 
@@ -322,12 +326,12 @@ function GeneratePageInner() {
                   <div>
                     <div className="font-medium text-white">
                       {usage
-                        ? `${usage.remainingCredits.toLocaleString()} daily AI credits remaining`
-                        : "Loading your daily AI credit balance..."}
+                        ? `${usage.totalAvailableCredits.toLocaleString()} AI credits available`
+                        : "Loading your AI credit balance..."}
                     </div>
                     <div className="mt-1 text-xs text-text-muted">
                       {usage
-                        ? `${usage.plan.toUpperCase()} plan • ${usage.usedCredits.toLocaleString()} used today • resets in ${resetCountdown}`
+                        ? `${usage.plan.toUpperCase()} plan • ${dailyRemainingCredits.toLocaleString()} daily + ${bonusCredits.toLocaleString()} bonus • resets in ${resetCountdown}`
                         : "Daily credits reset every 24 hours at 00:00 UTC."}
                     </div>
                   </div>
@@ -592,8 +596,10 @@ function GeneratePageInner() {
                 <p className="text-sm text-text-muted">
                   {used.toLocaleString()} of {planLimit.toLocaleString()} daily
                   AI credits used
-                  {Number.isFinite(remaining) && remaining > 0 && limitCheck.allowed
-                    ? ` · ${remaining} remaining`
+                  {Number.isFinite(totalAvailableCredits) &&
+                  totalAvailableCredits > 0 &&
+                  limitCheck.allowed
+                    ? ` · ${totalAvailableCredits.toLocaleString()} total available (${dailyRemainingCredits.toLocaleString()} daily + ${bonusCredits.toLocaleString()} bonus)`
                     : ""}
                 </p>
               )}

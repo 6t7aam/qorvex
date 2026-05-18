@@ -9,6 +9,10 @@ import {
   type DailyCreditSnapshot,
 } from "@/lib/ai-credits";
 import type { AIUsage } from "@/lib/ai/types";
+import {
+  consumeBonusCredits,
+  getUserBonusCreditBalance,
+} from "@/lib/referrals.server";
 import type { DailyAIUsage, Plan } from "@/types";
 
 interface UsageSessionOptions {
@@ -25,10 +29,13 @@ function toSnapshot(
   row: DailyUsageRecord,
   plan: Plan,
   abuseDetected: boolean,
+  bonusCredits: number,
 ): DailyCreditSnapshot {
   const window = getUtcUsageWindow();
   const limitCredits = getPlanDailyCreditLimit(plan, abuseDetected);
   const usedCredits = row.credits_used ?? 0;
+  const dailyRemainingCredits = Math.max(0, limitCredits - usedCredits);
+  const totalAvailableCredits = dailyRemainingCredits + Math.max(0, bonusCredits);
 
   return {
     usageDate: row.usage_date,
@@ -36,7 +43,10 @@ function toSnapshot(
     plan,
     limitCredits,
     usedCredits,
-    remainingCredits: Math.max(0, limitCredits - usedCredits),
+    dailyRemainingCredits,
+    bonusCredits: Math.max(0, bonusCredits),
+    totalAvailableCredits,
+    remainingCredits: totalAvailableCredits,
     promptTokens: row.prompt_tokens ?? 0,
     completionTokens: row.completion_tokens ?? 0,
     totalTokens: row.total_tokens ?? 0,
@@ -101,8 +111,9 @@ export async function getDailyCreditSnapshot(options: {
     options.userId,
     window.usageDate,
   );
+  const bonusCredits = await getUserBonusCreditBalance(options.admin, options.userId);
 
-  return toSnapshot(row, options.plan, options.abuseDetected ?? false);
+  return toSnapshot(row, options.plan, options.abuseDetected ?? false, bonusCredits);
 }
 
 export async function beginAIUsageSession({
@@ -118,6 +129,9 @@ export async function beginAIUsageSession({
     reserveCredits ?? DAILY_CREDIT_CONFIG[plan].softReserveCredits;
   const limitCredits = getPlanDailyCreditLimit(plan, abuseDetected);
   const now = new Date();
+  const initialBonusCredits = await getUserBonusCreditBalance(admin, userId);
+  const initialDailyRemaining = Math.max(0, limitCredits - (row.credits_used ?? 0));
+  const initialTotalAvailable = initialDailyRemaining + Math.max(0, initialBonusCredits);
 
   if ((row.active_requests ?? 0) >= MAX_ACTIVE_AI_REQUESTS) {
     throw new Error(
@@ -134,7 +148,7 @@ export async function beginAIUsageSession({
     }
   }
 
-  if ((row.credits_used ?? 0) + reserve > limitCredits) {
+  if (initialTotalAvailable < reserve) {
     throw new Error(
       `Daily AI credits are nearly exhausted for your ${plan.toUpperCase()} plan. Please wait for the UTC reset or upgrade your plan.`,
     );
@@ -158,13 +172,17 @@ export async function beginAIUsageSession({
   row = updated;
 
   return {
-    snapshot: toSnapshot(row, plan, abuseDetected),
+    snapshot: toSnapshot(row, plan, abuseDetected, initialBonusCredits),
     async ensureCreditsAvailable(estimatedCredits: number, stageLabel: string) {
       const latest = await getOrCreateDailyUsageRow(admin, userId, window.usageDate);
-      if ((latest.credits_used ?? 0) + estimatedCredits > limitCredits) {
+      const bonusCredits = await getUserBonusCreditBalance(admin, userId);
+      const totalAvailableCredits =
+        Math.max(0, limitCredits - (latest.credits_used ?? 0)) +
+        Math.max(0, bonusCredits);
+      if (totalAvailableCredits < estimatedCredits) {
         return {
           allowed: false,
-          message: `Qorvex paused before ${stageLabel} because your remaining daily AI credits are too low to finish that stage safely.`,
+          message: `Qorvex paused before ${stageLabel} because your remaining credits are too low to finish that stage safely.`,
         };
       }
 
@@ -172,6 +190,20 @@ export async function beginAIUsageSession({
     },
     async recordUsage(usage: AIUsage) {
       const latest = await getOrCreateDailyUsageRow(admin, userId, window.usageDate);
+      const bonusCredits = await getUserBonusCreditBalance(admin, userId);
+      const dailyRemainingCredits = Math.max(
+        0,
+        limitCredits - (latest.credits_used ?? 0),
+      );
+      const dailyCreditsToUse = Math.min(usage.creditsUsed, dailyRemainingCredits);
+      const bonusCreditsToUse = Math.max(0, usage.creditsUsed - dailyCreditsToUse);
+
+      if (bonusCreditsToUse > Math.max(0, bonusCredits)) {
+        throw new Error(
+          "Your remaining credits are too low to complete this AI request.",
+        );
+      }
+
       const { data: next, error } = await admin
         .from("daily_ai_usage")
         .update({
@@ -181,7 +213,7 @@ export async function beginAIUsageSession({
           total_tokens: (latest.total_tokens ?? 0) + usage.totalTokens,
           estimated_cost_usd:
             Number(latest.estimated_cost_usd ?? 0) + usage.estimatedCostUsd,
-          credits_used: (latest.credits_used ?? 0) + usage.creditsUsed,
+          credits_used: (latest.credits_used ?? 0) + dailyCreditsToUse,
         })
         .eq("id", latest.id)
         .select("*")
@@ -191,7 +223,19 @@ export async function beginAIUsageSession({
         throw error ?? new Error("Could not record AI usage");
       }
 
-      return toSnapshot(next, plan, abuseDetected);
+      if (bonusCreditsToUse > 0) {
+        await consumeBonusCredits(admin, {
+          userId,
+          amount: bonusCreditsToUse,
+          usageDate: window.usageDate,
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+        });
+      }
+
+      const nextBonusCredits = Math.max(0, bonusCredits - bonusCreditsToUse);
+      return toSnapshot(next, plan, abuseDetected, nextBonusCredits);
     },
     async release() {
       const latest = await getOrCreateDailyUsageRow(admin, userId, window.usageDate);
