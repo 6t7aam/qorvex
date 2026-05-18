@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { usdToCredits } from "@/lib/ai-credits";
 import type {
   AICostEstimateInput,
@@ -8,24 +7,44 @@ import type {
   AIUsage,
 } from "@/lib/ai/types";
 
+// The "AnthropicProvider" name is kept for backwards compatibility, but this
+// implementation talks to any OpenAI-compatible `/chat/completions` endpoint.
+// `ANTHROPIC_BASE_URL` should therefore point at an OpenAI-compatible gateway
+// (OmniRoute, OpenRouter, Gemini's openai bridge, etc.) — not the native
+// Anthropic Messages API.
+
 const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5";
 const INPUT_COST_PER_MILLION =
   Number(process.env.ANTHROPIC_INPUT_COST_PER_MILLION ?? "3");
 const OUTPUT_COST_PER_MILLION =
   Number(process.env.ANTHROPIC_OUTPUT_COST_PER_MILLION ?? "15");
 
-function createAnthropicClient() {
+interface OpenAIChatCompletion {
+  choices?: Array<{
+    message?: { content?: string | null };
+    finish_reason?: string | null;
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
+function resolveBaseUrl(): string {
+  const raw = (process.env.ANTHROPIC_BASE_URL ?? "").trim();
+  if (!raw) return "https://api.anthropic.com/v1";
+  return raw.replace(/\/$/, "");
+}
+
+function requireApiKey(): string {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
       "ANTHROPIC_API_KEY environment variable is not set. Please configure it to generate apps.",
     );
   }
-
-  return new Anthropic({
-    apiKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-  });
+  return apiKey;
 }
 
 function estimatePromptTokens(prompt: string) {
@@ -59,24 +78,43 @@ export class AnthropicProvider implements AIProvider {
   async generateText(
     options: AITextGenerationOptions,
   ): Promise<AITextGenerationResult> {
-    const anthropic = createAnthropicClient();
-    const response = await anthropic.messages.create({
-      model: this.model,
-      max_tokens: options.maxTokens ?? 8000,
-      temperature: options.temperature ?? 0.2,
-      system: options.systemPrompt,
-      messages: [{ role: "user", content: options.prompt }],
+    const apiKey = requireApiKey();
+    const url = `${resolveBaseUrl()}/chat/completions`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [
+          { role: "system", content: options.systemPrompt },
+          { role: "user", content: options.prompt },
+        ],
+        temperature: options.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? 8000,
+      }),
     });
 
-    const text = response.content
-      .map((block) => (block.type === "text" ? block.text : ""))
-      .join("");
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(
+        `AI provider request failed (${response.status} ${response.statusText}). ${text.slice(0, 500)}`.trim(),
+      );
+    }
+
+    const payload = (await response.json().catch(() => null)) as
+      | OpenAIChatCompletion
+      | null;
+    const text = payload?.choices?.[0]?.message?.content ?? "";
 
     const promptTokens =
-      response.usage?.input_tokens ??
+      payload?.usage?.prompt_tokens ??
       estimatePromptTokens(`${options.systemPrompt}\n${options.prompt}`);
     const completionTokens =
-      response.usage?.output_tokens ?? estimatePromptTokens(text);
+      payload?.usage?.completion_tokens ?? estimatePromptTokens(text);
 
     return {
       text,
