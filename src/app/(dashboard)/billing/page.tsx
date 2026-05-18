@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS } from "@/lib/constants";
-import { isStripeConfigured } from "@/lib/stripe/config";
 import { PlanCTAButton } from "@/components/billing/PlanCTAButton";
 import { ManageBillingButton } from "@/components/billing/ManageBillingButton";
 import { CheckoutSuccessSync } from "@/components/billing/CheckoutSuccessSync";
@@ -85,7 +84,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     | "pro"
     | "max"
     | null;
-  const stripeReady = isStripeConfigured();
   const paidPlanActive =
     plan !== "free" &&
     (subscription?.status === "active" ||
@@ -139,19 +137,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-200">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           Payment canceled. Your plan was not changed.
-        </div>
-      )}
-
-      {!stripeReady && (
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-5 py-4 text-sm text-violet-200">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          Stripe is not configured yet. Add{" "}
-          <code className="rounded bg-black/30 px-1 text-xs">STRIPE_SECRET_KEY</code>,{" "}
-          <code className="rounded bg-black/30 px-1 text-xs">STRIPE_PRO_PRICE_ID</code>{" "}
-          and{" "}
-          <code className="rounded bg-black/30 px-1 text-xs">STRIPE_MAX_PRICE_ID</code>{" "}
-          to <code className="rounded bg-black/30 px-1 text-xs">.env.local</code> to
-          enable checkout.
         </div>
       )}
 
