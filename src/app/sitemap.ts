@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { env } from "@/lib/env";
+import { QORVEX_SITE_URL } from "@/lib/seo";
 
 const PUBLIC_ROUTES = [
   { path: "", priority: 1, changeFrequency: "daily" },
@@ -13,7 +13,7 @@ const PUBLIC_ROUTES = [
 }>;
 
 function getBaseUrl() {
-  return env.APP_URL.replace(/\/+$/, "");
+  return QORVEX_SITE_URL.replace(/\/+$/, "");
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {

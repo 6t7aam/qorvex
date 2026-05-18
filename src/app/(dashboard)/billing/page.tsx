@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -15,6 +16,7 @@ import { PLANS } from "@/lib/constants";
 import { PlanCTAButton } from "@/components/billing/PlanCTAButton";
 import { ManageBillingButton } from "@/components/billing/ManageBillingButton";
 import { CheckoutSuccessSync } from "@/components/billing/CheckoutSuccessSync";
+import { createPrivatePageMetadata } from "@/lib/seo";
 import type {
   ManualPayment,
   Plan,
@@ -23,6 +25,12 @@ import type {
 } from "@/types";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = createPrivatePageMetadata({
+  title: "Billing & Plans",
+  description:
+    "Manage your Qorvex subscription, AI credits, plan limits, and payment settings.",
+  path: "/billing",
+});
 
 interface BillingPageProps {
   searchParams: Promise<{

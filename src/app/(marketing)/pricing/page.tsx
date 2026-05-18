@@ -3,12 +3,14 @@ import { Check, X } from "lucide-react";
 import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
 import { FadeIn } from "@/components/shared/FadeIn";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Pricing — Qorvex",
+export const metadata: Metadata = createPageMetadata({
+  absoluteTitle: "Qorvex Pricing",
   description:
-    "Simple transparent pricing. Free plan with daily AI credits, Pro at $9.99/month, and Max at $29.99/month for larger daily AI capacity.",
-};
+    "Choose a Qorvex plan for AI mobile app generation, GitHub export, premium templates, and advanced app editing.",
+  path: "/pricing",
+});
 
 interface ComparisonRow {
   label: string;
@@ -42,6 +44,7 @@ function Cell({ value }: { value: string | boolean }) {
       <X className="mx-auto h-4 w-4 text-text-muted" />
     );
   }
+
   return <span className="text-sm font-medium text-white">{value}</span>;
 }
 
@@ -52,12 +55,11 @@ export default function PricingPage() {
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <FadeIn>
             <h1 className="text-5xl font-bold tracking-tight text-white sm:text-6xl">
-              Pricing that{" "}
-              <span className="gradient-text">scales with you</span>
+              Pricing that <span className="gradient-text">scales with you</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-text-secondary">
               Pick the plan that fits where you are. Upgrade or downgrade
-              anytime — your generated apps are always yours to keep.
+              anytime and keep shipping your generated apps.
             </p>
           </FadeIn>
         </div>
@@ -77,7 +79,7 @@ export default function PricingPage() {
           </FadeIn>
 
           <FadeIn className="mt-12 overflow-x-auto">
-            <table className="w-full min-w-[680px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-white/5">
+            <table className="w-full min-w-[680px] overflow-hidden rounded-2xl border border-white/5 border-separate border-spacing-0">
               <thead>
                 <tr className="bg-background-secondary/60">
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-text-secondary">
@@ -95,14 +97,10 @@ export default function PricingPage() {
                 </tr>
               </thead>
               <tbody>
-                {COMPARISON.map((row, idx) => (
+                {COMPARISON.map((row, index) => (
                   <tr
                     key={row.label}
-                    className={
-                      idx % 2 === 0
-                        ? "bg-transparent"
-                        : "bg-white/[0.015]"
-                    }
+                    className={index % 2 === 0 ? "bg-transparent" : "bg-white/[0.015]"}
                   >
                     <td className="border-t border-white/5 px-6 py-3.5 text-sm text-white">
                       {row.label}

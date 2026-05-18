@@ -2,10 +2,10 @@
 
 import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 import { REFERRAL_COOKIE_NAME } from "@/lib/referrals";
 import { signInWithGoogle, signUpWithEmail } from "@/services/auth.service";
 import { validateEmail } from "@/lib/email-validation";
@@ -30,7 +30,9 @@ function SignupPageInner() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(
-    urlError === "disposable_email" ? "Please use a permanent email address" : null
+    urlError === "disposable_email"
+      ? "Please use a permanent email address"
+      : null,
   );
   const [success, setSuccess] = useState(false);
 
@@ -57,7 +59,6 @@ function SignupPageInner() {
       return;
     }
 
-    // Validate email and check for disposable domains
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
       setError(emailValidation.error ?? "Invalid email address");
@@ -97,21 +98,7 @@ function SignupPageInner() {
 
   return (
     <div className="relative z-10 flex w-full flex-col items-center px-4">
-      <Link
-        href="/"
-        className="mb-8 inline-flex items-center gap-2 text-2xl font-bold tracking-tight"
-      >
-        {/* Site logo — swap the file at public/qorvex-logo.svg to change everywhere. */}
-        <Image
-          src="/qorvex-logo.svg"
-          alt="Qorvex"
-          width={36}
-          height={36}
-          priority
-          className="h-9 w-9 rounded-lg"
-        />
-        <span className="gradient-text">Qorvex</span>
-      </Link>
+      <Logo href="/" size="lg" priority className="mb-8" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -148,14 +135,15 @@ function SignupPageInner() {
               Create your Qorvex account
             </p>
 
-            {referralCode && (
+            {referralCode ? (
               <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
                 You were invited to Qorvex. Create your account to continue.
                 <div className="mt-1 text-xs text-cyan-200/80">
-                  Upgrade to Pro or Max and your inviter will receive bonus credits.
+                  Upgrade to Pro or Max and your inviter will receive bonus
+                  credits.
                 </div>
               </div>
-            )}
+            ) : null}
 
             <button
               type="button"
@@ -213,7 +201,7 @@ function SignupPageInner() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
+                  onClick={() => setShowPassword((value) => !value)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-white"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -231,17 +219,20 @@ function SignupPageInner() {
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="underline hover:text-text-secondary">
+                <Link
+                  href="/privacy"
+                  className="underline hover:text-text-secondary"
+                >
                   Privacy Policy
                 </Link>
                 .
               </p>
 
-              {error && (
+              {error ? (
                 <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                   {error}
                 </div>
-              )}
+              ) : null}
 
               <button
                 type="submit"
@@ -304,21 +295,7 @@ function GoogleIcon() {
 function SignupPageSkeleton() {
   return (
     <div className="relative z-10 flex w-full flex-col items-center px-4">
-      <Link
-        href="/"
-        className="mb-8 inline-flex items-center gap-2 text-2xl font-bold tracking-tight"
-      >
-        {/* Site logo — swap the file at public/qorvex-logo.svg to change everywhere. */}
-        <Image
-          src="/qorvex-logo.svg"
-          alt="Qorvex"
-          width={36}
-          height={36}
-          priority
-          className="h-9 w-9 rounded-lg"
-        />
-        <span className="gradient-text">Qorvex</span>
-      </Link>
+      <Logo href="/" size="lg" priority className="mb-8" />
 
       <div className="glass w-full max-w-md rounded-2xl p-8">
         <div className="h-8 w-48 animate-pulse rounded bg-white/10" />

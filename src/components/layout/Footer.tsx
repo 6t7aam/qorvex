@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 
 const COLUMNS = [
   {
@@ -35,30 +35,19 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-4">
           <div className="space-y-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-lg font-bold tracking-tight"
-            >
-              {/* Site logo — swap the file at public/qorvex-logo.svg to change everywhere. */}
-              <Image
-                src="/qorvex-logo.svg"
-                alt="Qorvex"
-                width={28}
-                height={28}
-                className="h-7 w-7 rounded-md"
-              />
-              <span className="gradient-text">Qorvex</span>
-            </Link>
-            <p className="text-sm text-text-muted">Turn ideas into mobile apps.</p>
+            <Logo href="/" size="md" />
+            <p className="text-sm text-text-muted">
+              AI mobile app builder for React Native and Expo.
+            </p>
           </div>
 
-          {COLUMNS.map((col) => (
-            <div key={col.title}>
+          {COLUMNS.map((column) => (
+            <div key={column.title}>
               <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
-                {col.title}
+                {column.title}
               </h3>
               <ul className="mt-4 space-y-3">
-                {col.links.map((link) => (
+                {column.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
@@ -75,7 +64,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col gap-4 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-text-muted">
-            © 2025 Qorvex. All rights reserved.
+            © 2026 Qorvex. All rights reserved.
           </p>
           <div className="flex items-center gap-3 text-text-muted">
             <a

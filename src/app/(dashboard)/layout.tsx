@@ -1,9 +1,18 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PendingPaymentWatcher } from "@/hooks/usePendingPayment";
+import { createPrivatePageMetadata } from "@/lib/seo";
 import type { UserProfile } from "@/types";
+
+export const metadata: Metadata = createPrivatePageMetadata({
+  title: "Dashboard",
+  description:
+    "Manage your Qorvex projects, app generations, usage, and subscription from your dashboard.",
+  path: "/dashboard",
+});
 
 export default async function DashboardLayout({
   children,

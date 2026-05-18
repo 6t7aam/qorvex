@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 
 const NAV_LINKS = [
   { label: "Features", href: "/#features" },
@@ -20,6 +20,7 @@ export function Navbar() {
     function onScroll() {
       setScrolled(window.scrollY > 12);
     }
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -34,21 +35,7 @@ export function Navbar() {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-lg font-bold tracking-tight"
-        >
-          {/* Site logo — swap the file at public/qorvex-logo.svg to change everywhere. */}
-          <Image
-            src="/qorvex-logo.svg"
-            alt="Qorvex"
-            width={28}
-            height={28}
-            priority
-            className="h-7 w-7 rounded-md"
-          />
-          <span className="gradient-text">Qorvex</span>
-        </Link>
+        <Logo href="/" size="md" priority />
 
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
@@ -79,7 +66,7 @@ export function Navbar() {
 
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen((value) => !value)}
           className="rounded-lg p-2 text-white md:hidden"
           aria-label="Toggle navigation"
         >
@@ -87,7 +74,7 @@ export function Navbar() {
         </button>
       </div>
 
-      {open && (
+      {open ? (
         <div className="border-t border-white/5 bg-background-primary/95 backdrop-blur-xl md:hidden">
           <nav className="flex flex-col gap-2 px-4 py-4 sm:px-6">
             {NAV_LINKS.map((link) => (
@@ -118,8 +105,7 @@ export function Navbar() {
             </div>
           </nav>
         </div>
-      )}
+      ) : null}
     </header>
   );
 }
-

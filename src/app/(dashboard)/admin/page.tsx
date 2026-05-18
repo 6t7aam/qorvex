@@ -1,11 +1,19 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Shield } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getAdminEmail, requireAdmin } from "@/lib/admin";
+import { createPrivatePageMetadata } from "@/lib/seo";
 import { AdminPaymentsClient } from "./AdminPaymentsClient";
 import type { ManualPayment } from "@/types";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = createPrivatePageMetadata({
+  title: "Admin",
+  description:
+    "Review Qorvex payments, users, plans, and system activity.",
+  path: "/admin",
+});
 
 interface AdminPaymentRow extends ManualPayment {
   user_email: string | null;

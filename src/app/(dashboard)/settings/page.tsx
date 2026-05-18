@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createPrivatePageMetadata } from "@/lib/seo";
 import { SettingsClient, type InitialProfile } from "./SettingsClient";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = createPrivatePageMetadata({
+  title: "Settings",
+  description:
+    "Manage your Qorvex account, profile, preferences, and security settings.",
+  path: "/settings",
+});
 
 export default async function SettingsPage() {
   const supabase = await createClient();

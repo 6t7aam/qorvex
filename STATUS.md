@@ -66,6 +66,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Referrals: per-user referral codes, `/referrals` dashboard page, signup referral capture/claim flow, optional referred-user signup bonus, referrer paid-upgrade rewards, and bonus credit tracking via `user_credit_adjustments`.
 - Supabase foundation: browser client, server client, service-role admin client, schema, seed data, RLS policies.
 - GitHub export: authenticated OAuth connect/callback routes, sanitized GitHub status route, repo list/create routes, server-side project export route, project Deploy modal flow, and export metadata tracking.
+- SEO and brand consistency: centralized Next.js metadata helpers, route-level SEO metadata, shared `src/components/brand/Logo.tsx`, generated OG image / Apple icon routes, `robots.txt`, and `sitemap.xml`.
 
 ## Current architecture
 
@@ -88,11 +89,13 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - GitHub integration: `/api/github/connect` now starts OAuth with `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and `NEXT_PUBLIC_APP_URL`; `/api/github/callback` exchanges the code server-side and stores the token with the service-role client; `/api/github/status`, `/api/github/repos`, `/api/github/repos/create`, and `/api/projects/[id]/export/github` keep the access token server-only while letting the client connect, create/select repos, and export generated Expo files.
 - GitHub export pipeline: Qorvex exports only generated project files plus a synthesized `README.md` and `.gitignore`, validates repository ownership against the connected GitHub username, supports empty or existing repos by creating/updating a commit tree on the selected branch, updates `projects.github_repo`, and records export metadata in `deployments` plus `github_exports` when that table exists.
 - Referral pipeline: `/signup?ref=CODE` stores the referral code in cookie/local storage, the auth callback claims it server-side, the referred user can receive a one-time signup bonus, and confirmed Pro/Max upgrades trigger idempotent referrer rewards through the same server helper from Stripe sync and manual payment approval.
+- SEO metadata strategy: `src/lib/seo.ts` now centralizes `metadataBase`, canonical URLs, OG/Twitter defaults, and public/private page metadata helpers. Public marketing/auth pages are indexable, while private dashboard routes are marked `noindex, nofollow`.
+- Brand assets: shared logo rendering now lives in `src/components/brand/Logo.tsx` and is used across the navbar, footer, sidebar, and auth flows. Root metadata references `public/favicon.svg`, `src/app/icon.svg`, generated `/apple-icon`, and generated `/og-image.png`.
 
 ## Health check results
 
-- `npm run build`: passing (verified 2026-05-18 after referral rollout).
-- `npm run lint`: passing (verified 2026-05-18 after referral rollout).
+- `npm run build`: passing (verified 2026-05-18 after SEO and logo consistency rollout).
+- `npm run lint`: passing (verified 2026-05-18 after SEO and logo consistency rollout).
 - `npm run dev`: app starts. An existing dev server was already listening on `localhost:3000`; the app returned HTTP 200.
 - `/api/auth/signout`: verified on the running dev server. POST returns `{"success":true}` and the client now redirects to `/login` after the server clears auth cookies.
 - `/api/projects/delete-error-projects`: verified on the running dev server. Unauthenticated requests now return clear JSON `{"success":false,"error":"Unauthorized"}` instead of hanging.
@@ -104,6 +107,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `/api/referrals/claim-signup`: implemented. Authenticated users can safely claim a stored referral code server-side after signup without trusting client reward amounts.
 - `/api/referrals/grant-reward`: implemented as an admin/internal route. Reward amounts are calculated server-side from the upgraded plan and duplicate rewards are blocked.
 - `/api/referrals/status`: implemented. Authenticated users can fetch whether they were referred and whether their signup bonus has already been granted.
+- SEO routes: `/sitemap.xml`, `/robots.txt`, `/og-image.png`, and `/apple-icon` are implemented and build-verified.
 - `/api/manual-payments`: implemented. Manual payment submission now goes through an authenticated server route with a 60 second screenshot upload timeout, server-side image optimization, friendly validation errors, and guaranteed loading-state cleanup in the modal client.
 - Manual payment client flow: the billing modal now logs submit state in the browser console, aborts the request after 65 seconds, shows readable failure toasts, refreshes `/billing` on success so the pending-payment banner appears immediately, closes the modal, and always clears the `Submitting...` state in `finally`.
 - GitHub routes: build-verified routes now include `/api/github/connect`, `/api/github/callback`, `/api/github/status`, `/api/github/repos`, `/api/github/repos/create`, and `/api/projects/[id]/export/github`.
@@ -137,6 +141,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `referral_codes`: RLS enabled. Users can read their own code; code creation/backfill happens server-side.
 - `referrals`: RLS enabled. Users can read referrals where they are the referrer or referred user; reward/status writes are server-side only.
 - `user_credit_adjustments`: RLS enabled. Users can read their own bonus-credit adjustments; writes happen through server-side reward/usage flows.
+- Public SEO surfaces: public pages now have canonical URLs plus unique titles/descriptions, and private dashboard pages remain out of search indexes through metadata robots rules.
 
 ## Remaining bugs / risks
 
@@ -146,6 +151,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - The GitHub rollout needs `supabase/migration_github_export.sql` applied remotely so `github_connections` no longer exposes tokens via old `select` policies and `github_exports` can persist export metadata.
 - The current staged code generator uses a deterministic Expo template driven by AI-produced plan/screen specs. It is much more reliable for large prompts, but future quality work should keep enriching the generated component library and screen templates.
 - Project edit chat currently uses compact project context plus targeted file snippets instead of the full codebase. This is more reliable for everyday edits, but very large cross-cutting refactors may still need a broader file-selection strategy later.
+- Browser-level verification of final tab titles, canonical tags, and social previews still needs one manual pass in a real browser / social debugger, even though the metadata routes and page metadata build cleanly.
 - Browser click-through verification for authenticated project detail editing, download export, deploy modals, and live preview switching still needs a real interactive session. The route-level and build-level checks are complete.
 - Browser click-through verification for the project card Delete dialog (open menu → Delete → Cancel/Delete) and the /settings Profile save round-trip (full name + language persists across refresh) still needs a real signed-in session. The component, build, and lint level checks are complete.
 - Stripe checkout/portal/webhook cannot fully work until Stripe environment variables are configured.
@@ -161,6 +167,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Apply `supabase/migration_daily_ai_credits.sql` remotely and verify the new daily usage rows, generation token columns, and RLS policy behavior against the live database.
 - Apply `supabase/migration_referrals.sql` remotely and verify referral code backfill, signup claims, signup bonuses, and paid-upgrade reward grants against the live database.
 - Add a server-side usage summary card to billing so the new daily AI credit metrics are visible there even before client hydration.
+- Replace the generated `/og-image.png` and `/apple-icon` routes with final handcrafted marketing assets later if brand/design wants pixel-perfect raster exports; the current generated assets are production-safe defaults.
 - Expand the staged file generator with more domain-specific components so finance, fitness, restaurant, commerce, and travel apps diverge even further in their generated code.
 - Add a dedicated project-edit route alias if we later want `/api/projects/[id]/chat` semantics without changing the current working `/api/generate/chat` flow.
 - Add telemetry around per-stage duration, fallback frequency, and partial-generation recovery so large-app failures can be measured instead of inferred.

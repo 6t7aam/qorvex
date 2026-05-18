@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectsBrowser } from "@/components/dashboard/ProjectsBrowser";
+import { createPrivatePageMetadata } from "@/lib/seo";
 import type { Project } from "@/types";
+
+export const metadata: Metadata = createPrivatePageMetadata({
+  title: "Projects",
+  description:
+    "View, edit, preview, and manage your AI-generated mobile app projects.",
+  path: "/projects",
+});
 
 export default async function ProjectsPage() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

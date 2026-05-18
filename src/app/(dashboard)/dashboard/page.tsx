@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Crown,
@@ -12,9 +13,16 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { UsageBar } from "@/components/dashboard/UsageBar";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { APP_TEMPLATES } from "@/lib/constants";
+import { createPrivatePageMetadata } from "@/lib/seo";
 import type { Project, UserProfile } from "@/types";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = createPrivatePageMetadata({
+  title: "Dashboard",
+  description:
+    "Manage your Qorvex projects, app generations, usage, and subscription from your dashboard.",
+  path: "/dashboard",
+});
 
 const TEMPLATE_ICON_NAMES = APP_TEMPLATES.slice(0, 4);
 

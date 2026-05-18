@@ -1,11 +1,11 @@
 "use client";
 
 import { Suspense, useState, type FormEvent } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
 import { signInWithEmail, signInWithGoogle } from "@/services/auth.service";
 
 export default function LoginPage() {
@@ -57,21 +57,7 @@ function LoginPageInner() {
 
   return (
     <div className="relative z-10 flex w-full flex-col items-center px-4">
-      <Link
-        href="/"
-        className="mb-8 inline-flex items-center gap-2 text-2xl font-bold tracking-tight"
-      >
-        {/* Site logo — swap the file at public/qorvex-logo.svg to change everywhere. */}
-        <Image
-          src="/qorvex-logo.svg"
-          alt="Qorvex"
-          width={36}
-          height={36}
-          priority
-          className="h-9 w-9 rounded-lg"
-        />
-        <span className="gradient-text">Qorvex</span>
-      </Link>
+      <Logo href="/" size="lg" priority className="mb-8" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -139,7 +125,7 @@ function LoginPageInner() {
             />
             <button
               type="button"
-              onClick={() => setShowPassword((v) => !v)}
+              onClick={() => setShowPassword((value) => !value)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-white"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
@@ -160,22 +146,18 @@ function LoginPageInner() {
             </Link>
           </div>
 
-          {error && (
+          {error ? (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {error}
             </div>
-          )}
+          ) : null}
 
           <button
             type="submit"
             disabled={isLoading}
             className="gradient-bg flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
           >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Sign in"
-            )}
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
           </button>
         </form>
 

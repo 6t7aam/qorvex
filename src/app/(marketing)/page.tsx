@@ -6,26 +6,14 @@ import { Pricing } from "@/components/landing/Pricing";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { FAQ } from "@/components/landing/FAQ";
 import { CTA } from "@/components/landing/CTA";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Qorvex — Turn Ideas Into Mobile Apps with AI",
+export const metadata: Metadata = createPageMetadata({
+  absoluteTitle: "Qorvex — AI Mobile App Builder",
   description:
-    "Generate production-ready React Native apps from plain English descriptions. Powered by Claude AI. Start free, no coding required.",
-  keywords: [
-    "mobile app builder",
-    "AI app generator",
-    "React Native generator",
-    "no-code mobile",
-    "Expo app builder",
-  ],
-  openGraph: {
-    title: "Qorvex — Turn Ideas Into Mobile Apps with AI",
-    description:
-      "Generate production-ready React Native apps from plain English descriptions. Powered by Claude AI.",
-    type: "website",
-    siteName: "Qorvex",
-  },
-};
+    "Create mobile apps with AI. Turn ideas into React Native and Expo apps with previews, editing, exports, and launch tools.",
+  path: "/",
+});
 
 export default function LandingPage() {
   return (

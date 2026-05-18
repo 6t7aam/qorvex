@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 680" role="img" aria-label="Qorvex logo">
+  <defs>
+    <linearGradient id="vgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="glow1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="bggrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d0d12"/>
+      <stop offset="100%" stop-color="#080810"/>
+    </linearGradient>
+    <linearGradient id="ringgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="680" height="680" rx="120" fill="url(#bggrad)"/>
+
+  <g opacity="0.06" stroke="#7c3aed" stroke-width="0.5">
+    <line x1="0" y1="170" x2="680" y2="170"/>
+    <line x1="0" y1="340" x2="680" y2="340"/>
+    <line x1="0" y1="510" x2="680" y2="510"/>
+    <line x1="170" y1="0" x2="170" y2="680"/>
+    <line x1="340" y1="0" x2="340" y2="680"/>
+    <line x1="510" y1="0" x2="510" y2="680"/>
+  </g>
+
+  <circle cx="340" cy="340" r="260" fill="none" stroke="url(#ringgrad)" stroke-width="1" opacity="0.5"/>
+  <circle cx="340" cy="340" r="240" fill="none" stroke="url(#ringgrad)" stroke-width="0.5" opacity="0.3"/>
+
+  <polygon points="340,100 566,220 566,460 340,580 114,460 114,220" fill="url(#glow1)"/>
+  <polygon points="340,100 566,220 566,460 340,580 114,460 114,220" fill="none" stroke="url(#vgrad)" stroke-width="1.5" opacity="0.6"/>
+  <polygon points="340,150 516,250 516,450 340,550 164,450 164,250" fill="none" stroke="url(#vgrad)" stroke-width="0.5" opacity="0.3"/>
+
+  <circle cx="340" cy="100" r="4" fill="url(#vgrad)" opacity="0.8"/>
+  <circle cx="566" cy="220" r="4" fill="url(#vgrad)" opacity="0.8"/>
+  <circle cx="566" cy="460" r="4" fill="url(#vgrad)" opacity="0.8"/>
+  <circle cx="340" cy="580" r="4" fill="url(#vgrad)" opacity="0.8"/>
+  <circle cx="114" cy="460" r="4" fill="url(#vgrad)" opacity="0.8"/>
+  <circle cx="114" cy="220" r="4" fill="url(#vgrad)" opacity="0.8"/>
+
+  <circle cx="330" cy="330" r="155" fill="none" stroke="url(#vgrad)" stroke-width="28"/>
+  <line x1="430" y1="420" x2="510" y2="500" stroke="url(#vgrad)" stroke-width="28" stroke-linecap="round"/>
+
+  <circle cx="200" cy="180" r="3" fill="#7c3aed" opacity="0.5"/>
+  <circle cx="480" cy="180" r="3" fill="#06b6d4" opacity="0.5"/>
+  <circle cx="180" cy="340" r="2" fill="#7c3aed" opacity="0.4"/>
+  <circle cx="500" cy="340" r="2" fill="#06b6d4" opacity="0.4"/>
+
+  <line x1="240" y1="610" x2="440" y2="610" stroke="url(#vgrad)" stroke-width="1" opacity="0.5"/>
+  <line x1="290" y1="620" x2="390" y2="620" stroke="url(#vgrad)" stroke-width="0.5" opacity="0.3"/>
+</svg>

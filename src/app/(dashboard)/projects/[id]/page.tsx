@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectDetailTabs } from "@/components/dashboard/ProjectDetailTabs";
+import { createPrivatePageMetadata } from "@/lib/seo";
 import type { Plan, Project } from "@/types";
 
 interface AppVersionRow {
@@ -18,6 +20,21 @@ const STATUS_BADGE: Record<Project["status"], string> = {
   error: "bg-red-500/15 text-red-300 ring-red-500/30",
   deployed: "bg-violet-500/15 text-violet-300 ring-violet-500/30",
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+
+  return createPrivatePageMetadata({
+    title: "Project Editor",
+    description:
+      "Edit, preview, export, and manage your AI-generated mobile app project in Qorvex.",
+    path: `/projects/${id}`,
+  });
+}
 
 export default async function ProjectDetailPage({
   params,

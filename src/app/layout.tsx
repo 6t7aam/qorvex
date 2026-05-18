@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import {
+  QORVEX_DEFAULT_DESCRIPTION,
+  QORVEX_OG_IMAGE_PATH,
+  QORVEX_SITE_NAME,
+  QORVEX_SITE_URL,
+  getMetadataBase,
+} from "@/lib/seo";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,9 +23,12 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Qorvex — Turn Ideas Into Mobile Apps",
-  description:
-    "Generate production-ready React Native apps with AI in seconds. No coding required.",
+  metadataBase: getMetadataBase(),
+  title: {
+    default: QORVEX_SITE_NAME,
+    template: "%s | Qorvex",
+  },
+  description: QORVEX_DEFAULT_DESCRIPTION,
   keywords: [
     "mobile app builder",
     "AI app generator",
@@ -26,18 +36,36 @@ export const metadata: Metadata = {
     "no-code",
     "Expo",
   ],
+  alternates: {
+    canonical: QORVEX_SITE_URL,
+  },
   openGraph: {
-    title: "Qorvex — Turn Ideas Into Mobile Apps",
-    description:
-      "Generate production-ready React Native apps with AI in seconds. No coding required.",
+    title: QORVEX_SITE_NAME,
+    description: QORVEX_DEFAULT_DESCRIPTION,
+    url: QORVEX_SITE_URL,
     type: "website",
-    siteName: "Qorvex",
+    siteName: QORVEX_SITE_NAME,
+    images: [
+      {
+        url: QORVEX_OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
+        alt: "Qorvex — AI Mobile App Builder",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Qorvex — Turn Ideas Into Mobile Apps",
-    description:
-      "Generate production-ready React Native apps with AI in seconds. No coding required.",
+    title: QORVEX_SITE_NAME,
+    description: QORVEX_DEFAULT_DESCRIPTION,
+    images: [QORVEX_OG_IMAGE_PATH],
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
   },
 };
 
@@ -49,7 +77,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} dark antialiased min-h-screen bg-background-primary text-text-primary`}
+        className={`${inter.variable} ${jetbrainsMono.variable} dark min-h-screen bg-background-primary text-text-primary antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

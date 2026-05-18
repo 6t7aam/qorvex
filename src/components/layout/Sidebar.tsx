@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
+import { Logo } from "@/components/brand/Logo";
 import { withTimeout } from "@/lib/with-timeout";
 import type { UserProfile } from "@/types";
 
@@ -131,22 +131,13 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
 
   const sidebarBody = (
     <div className="flex h-full flex-col gap-6 p-5">
-      <Link
+      <Logo
         href="/dashboard"
-        className="inline-flex items-center gap-2 text-lg font-bold tracking-tight"
+        size="md"
+        priority
+        className="text-lg font-bold tracking-tight"
         onClick={() => setMobileOpen(false)}
-      >
-        {/* Site logo — swap the file at public/qorvex-logo.svg to change everywhere. */}
-        <Image
-          src="/qorvex-logo.svg"
-          alt="Qorvex"
-          width={28}
-          height={28}
-          priority
-          className="h-7 w-7 rounded-md"
-        />
-        <span className="gradient-text">Qorvex</span>
-      </Link>
+      />
 
       <nav className="flex flex-col gap-1">
         {NAV.map((item) => {
@@ -260,21 +251,7 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-sm font-bold tracking-tight"
-        >
-          {/* Site logo — swap the file at public/qorvex-logo.svg to change everywhere. */}
-          <Image
-            src="/qorvex-logo.svg"
-            alt="Qorvex"
-            width={24}
-            height={24}
-            priority
-            className="h-6 w-6 rounded-md"
-          />
-          <span className="gradient-text">Qorvex</span>
-        </Link>
+        <Logo href="/dashboard" size="sm" priority className="text-sm font-bold tracking-tight" />
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 text-[10px] font-semibold text-white">
           {initialsFromName(profile, fallbackEmail)}
         </div>
