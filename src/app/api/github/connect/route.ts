@@ -6,6 +6,8 @@ import {
   getGitHubOAuthCookieNames,
   getSafeGitHubRedirectPath,
 } from "@/lib/github/server";
+import { isPaidPlan } from "@/lib/plans";
+import type { Plan } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,19 @@ export async function GET(request: Request) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirectTo", "/billing");
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Gate: only Pro and Max users can connect GitHub for export.
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("plan")
+      .eq("id", user.id)
+      .maybeSingle<{ plan: Plan | null }>();
+    const plan: Plan = (profile?.plan as Plan | null | undefined) ?? "free";
+    if (!isPaidPlan(plan)) {
+      const billingUrl = new URL("/billing", request.url);
+      billingUrl.searchParams.set("upgrade", "github_export");
+      return NextResponse.redirect(billingUrl);
     }
 
     const url = new URL(request.url);

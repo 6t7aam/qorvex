@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import {
   createGitHubClient,
   ensureGitHubRepoAccess,
@@ -10,6 +10,7 @@ import {
   recordGitHubExport,
 } from "@/lib/github/server";
 import { getVisibleProjectFiles } from "@/lib/project-artifacts";
+import { requirePaidPlan } from "@/lib/plan-gate";
 import type { Project } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -46,17 +47,9 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    const gate = await requirePaidPlan();
+    if (!gate.ok) return gate.response;
+    const { user } = gate.context;
 
     const admin = createAdminClient();
     const { data: project, error: projectError } = await admin

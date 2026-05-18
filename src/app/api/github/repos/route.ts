@@ -1,27 +1,20 @@
 import { NextResponse } from "next/server";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import {
   createGitHubClient,
   getStoredGitHubConnection,
   listOwnedGitHubRepos,
   normalizeGitHubError,
 } from "@/lib/github/server";
+import { requirePaidPlan } from "@/lib/plan-gate";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    const gate = await requirePaidPlan();
+    if (!gate.ok) return gate.response;
+    const { user } = gate.context;
 
     const connection = await getStoredGitHubConnection(
       createAdminClient(),

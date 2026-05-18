@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Copy, Download, Rocket, Upload } from "lucide-react";
+import { Copy, Download, Lock, Rocket, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { GitHubExportModal } from "@/components/dashboard/GitHubExportModal";
 import { MobilePreview } from "@/components/generator/MobilePreview";
@@ -12,7 +12,8 @@ import {
   getVisibleProjectFiles,
 } from "@/lib/project-artifacts";
 import { withTimeout } from "@/lib/with-timeout";
-import type { Project } from "@/types";
+import { isPaidPlan } from "@/lib/plans";
+import type { Plan, Project } from "@/types";
 
 const TABS = [
   { key: "editor", label: "Editor" },
@@ -56,12 +57,14 @@ interface ProjectDetailTabsProps {
   project: Project;
   versions: AppVersion[];
   initialTab?: string;
+  userPlan?: Plan;
 }
 
 export function ProjectDetailTabs({
   project,
   versions,
   initialTab,
+  userPlan = "free",
 }: ProjectDetailTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -187,7 +190,15 @@ export function ProjectDetailTabs({
     return () => window.clearTimeout(timer);
   }, [pathname, router, searchParams]);
 
+  const canExportToGitHub = isPaidPlan(userPlan);
+
   async function handleGitHubClick() {
+    // Pro/Max gate. Free users get redirected to billing with a contextual upgrade banner.
+    if (!canExportToGitHub) {
+      router.push("/billing?upgrade=github_export");
+      return;
+    }
+
     let connection = githubConnection;
     if (!connection && !isCheckingGitHub) {
       setIsCheckingGitHub(true);
@@ -425,24 +436,29 @@ export function ProjectDetailTabs({
         {tab === "deploy" && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <DeployCard
-              icon={Upload}
+              icon={canExportToGitHub ? Upload : Lock}
               title="Export to GitHub"
               description={
-                githubConnection?.connected
-                  ? `Connected as @${githubConnection.githubUsername}. Create a repo or export to an existing one.`
-                  : "Connect your GitHub account, create or pick a repository, and push the generated Expo project files."
+                !canExportToGitHub
+                  ? "Available on Pro and Max. Upgrade your plan to push generated Expo files straight to a GitHub repository."
+                  : githubConnection?.connected
+                    ? `Connected as @${githubConnection.githubUsername}. Create a repo or export to an existing one.`
+                    : "Connect your GitHub account, create or pick a repository, and push the generated Expo project files."
               }
               cta={
-                isCheckingGitHub
-                  ? "Checking..."
-                  : githubConnection?.connected
-                    ? "Export to GitHub"
-                    : "Connect GitHub"
+                !canExportToGitHub
+                  ? "Upgrade to unlock"
+                  : isCheckingGitHub
+                    ? "Checking..."
+                    : githubConnection?.connected
+                      ? "Export to GitHub"
+                      : "Connect GitHub"
               }
               onClick={() => {
                 void handleGitHubClick();
               }}
-              disabled={isCheckingGitHub}
+              disabled={canExportToGitHub && isCheckingGitHub}
+              badge={!canExportToGitHub ? "Pro+ only" : undefined}
             />
             <DeployCard
               icon={Download}

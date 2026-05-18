@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectDetailTabs } from "@/components/dashboard/ProjectDetailTabs";
-import type { Project } from "@/types";
+import type { Plan, Project } from "@/types";
 
 interface AppVersionRow {
   id: string;
@@ -57,6 +57,13 @@ export default async function ProjectDetailPage({
     .order("version_number", { ascending: false });
   const versions = (versionsData as AppVersionRow[] | null) ?? [];
 
+  const { data: profileRow } = await supabase
+    .from("user_profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .maybeSingle<{ plan: Plan | null }>();
+  const userPlan: Plan = (profileRow?.plan as Plan | null | undefined) ?? "free";
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
@@ -82,7 +89,12 @@ export default async function ProjectDetailPage({
       </div>
 
       <div className="mt-8">
-        <ProjectDetailTabs project={project} versions={versions} initialTab={tab} />
+        <ProjectDetailTabs
+          project={project}
+          versions={versions}
+          initialTab={tab}
+          userPlan={userPlan}
+        />
       </div>
     </div>
   );

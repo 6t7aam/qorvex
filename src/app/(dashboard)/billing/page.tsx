@@ -6,6 +6,7 @@ import {
   Clock,
   CreditCard,
   Crown,
+  Lock,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -29,6 +30,7 @@ interface BillingPageProps {
     canceled?: string;
     plan?: string;
     session_id?: string;
+    upgrade?: string;
   }>;
 }
 
@@ -127,6 +129,21 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         </div>
       )}
 
+      {params.upgrade === "github_export" && plan === "free" && (
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-5 py-4 text-sm text-violet-100">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-violet-200" />
+          <div>
+            <div className="font-semibold text-white">
+              GitHub export is available on Pro and Max
+            </div>
+            <p className="mt-0.5 text-violet-200">
+              Upgrade to unlock one-click repo creation and direct push of the
+              generated Expo files.
+            </p>
+          </div>
+        </div>
+      )}
+
       {checkoutSucceeded && params.session_id ? (
         <CheckoutSuccessSync
           sessionId={params.session_id}
@@ -142,12 +159,29 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
       <CurrentPlanCard plan={plan} subscription={subscription} />
 
-      <section className="mt-10">
+      <section id="choose-plan" className="mt-10">
         <h2 className="text-lg font-semibold text-white">Choose a plan</h2>
         <div className="mt-5 grid gap-5 md:grid-cols-3">
-          <PricingCard plan="free" userPlan={plan} userId={userId} pendingPlan={pendingPlan} />
-          <PricingCard plan="pro" userPlan={plan} userId={userId} pendingPlan={pendingPlan} />
-          <PricingCard plan="max" userPlan={plan} userId={userId} pendingPlan={pendingPlan} />
+          <PricingCard
+            plan="free"
+            userPlan={plan}
+            userId={userId}
+            pendingPlan={pendingPlan}
+          />
+          <PricingCard
+            plan="pro"
+            userPlan={plan}
+            userId={userId}
+            pendingPlan={pendingPlan}
+            spotlight={params.upgrade === "github_export"}
+          />
+          <PricingCard
+            plan="max"
+            userPlan={plan}
+            userId={userId}
+            pendingPlan={pendingPlan}
+            spotlight={params.upgrade === "github_export"}
+          />
         </div>
       </section>
 
@@ -271,26 +305,29 @@ function PricingCard({
   userPlan,
   userId,
   pendingPlan,
+  spotlight,
 }: {
   plan: "free" | "pro" | "max";
   userPlan: Plan;
   userId: string | null;
   pendingPlan: "pro" | "max" | null;
+  spotlight?: boolean;
 }) {
   const config =
     plan === "max" ? PLANS.MAX : plan === "pro" ? PLANS.PRO : PLANS.FREE;
   const isCurrent = plan === userPlan;
   const isPro = plan === "pro";
+  const isPaidCard = plan === "pro" || plan === "max";
+  const isSpotlighted = !!spotlight && isPaidCard;
   const accent = badgeStyles(plan);
 
   return (
     <div
-      id={plan === "pro" ? "choose-plan" : undefined}
       className={`relative flex h-full flex-col rounded-2xl p-6 ${
         isPro
           ? "border border-violet-500/50 bg-violet-500/[0.06] shadow-xl shadow-violet-500/10"
           : "glass-border bg-background-secondary/40"
-      }`}
+      } ${isSpotlighted ? "ring-2 ring-violet-400/60" : ""}`}
     >
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-white">{config.name}</span>
