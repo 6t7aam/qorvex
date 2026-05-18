@@ -27,6 +27,7 @@ interface AIChatProps {
   projectName?: string;
   projectPrompt?: string;
   onFilesUpdate?: (files: Record<string, string>) => void;
+  onUpdatingChange?: (updating: boolean) => void;
 }
 
 type ChatIntent = "simple_chat" | "lightweight_edit" | "heavy_edit";
@@ -106,6 +107,7 @@ export function AIChat({
   projectName,
   projectPrompt,
   onFilesUpdate,
+  onUpdatingChange,
 }: AIChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     buildInitialMessages(currentFiles, projectName, projectPrompt),
@@ -182,11 +184,13 @@ export function AIChat({
     };
 
     const guessedIntent = clientClassifyIntent(trimmed);
+    const guessedIsEdit = guessedIntent !== "simple_chat";
     setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
     setInput("");
     setSending(true);
     setStatus(statusLabel(guessedIntent));
     setLastFailedMessage(null);
+    if (guessedIsEdit) onUpdatingChange?.(true);
 
     try {
       const response = await fetch("/api/generate/chat", {
@@ -230,6 +234,7 @@ export function AIChat({
       const nextFiles = payload?.updatedFiles ?? currentFilesRef.current;
       if (payload?.updatedFiles && onFilesUpdate) {
         currentFilesRef.current = payload.updatedFiles;
+        // Always propagate updated files to the parent so the preview re-renders.
         onFilesUpdate(payload.updatedFiles);
       }
 
@@ -266,6 +271,7 @@ export function AIChat({
     } finally {
       setSending(false);
       setStatus(null);
+      if (guessedIsEdit) onUpdatingChange?.(false);
     }
   }
 

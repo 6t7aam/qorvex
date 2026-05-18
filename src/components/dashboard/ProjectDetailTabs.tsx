@@ -85,6 +85,7 @@ export function ProjectDetailTabs({
   const [files, setFiles] = useState<Record<string, string>>(
     (project.generated_code ?? {}) as Record<string, string>,
   );
+  const [isPreviewUpdating, setIsPreviewUpdating] = useState(false);
   const [activeModal, setActiveModal] = useState<DeployModalKey>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [githubConnection, setGithubConnection] =
@@ -301,9 +302,12 @@ export function ProjectDetailTabs({
                   projectName={project.name}
                   projectPrompt={project.prompt}
                   onFilesUpdate={(updatedFiles) => {
+                    // Replace local state with the freshly returned files so
+                    // the MobilePreview to the right re-renders immediately.
                     setFiles(updatedFiles);
                     router.refresh();
                   }}
+                  onUpdatingChange={setIsPreviewUpdating}
                 />
               </div>
               <div className="flex min-h-0 items-center justify-center overflow-hidden p-8">
@@ -316,6 +320,7 @@ export function ProjectDetailTabs({
                     secondary: project.colors?.secondary ?? "#06b6d4",
                     accent: project.colors?.accent ?? "#f59e0b",
                   }}
+                  isUpdating={isPreviewUpdating}
                 />
               </div>
             </div>
@@ -333,6 +338,7 @@ export function ProjectDetailTabs({
                 secondary: project.colors?.secondary ?? "#06b6d4",
                 accent: project.colors?.accent ?? "#f59e0b",
               }}
+              isUpdating={isPreviewUpdating}
             />
           </div>
         )}

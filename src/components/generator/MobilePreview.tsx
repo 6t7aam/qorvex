@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { Maximize2, QrCode } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, Maximize2, QrCode } from "lucide-react";
 import { useUIStore } from "@/stores/useUIStore";
 import {
   getProjectPreviewModel,
@@ -17,6 +17,7 @@ interface MobilePreviewProps {
   projectName: string;
   projectPrompt?: string;
   colors: { primary: string; secondary: string; accent: string };
+  isUpdating?: boolean;
 }
 
 type PreviewItem = Record<string, string | number>;
@@ -77,6 +78,7 @@ export function MobilePreview({
   projectName,
   projectPrompt,
   colors,
+  isUpdating = false,
 }: MobilePreviewProps) {
   const device = useUIStore((state) => state.previewDevice);
   const setDevice = useUIStore((state) => state.setPreviewDevice);
@@ -94,6 +96,30 @@ export function MobilePreview({
 
   const screens = preview.screens.slice(0, 6);
   const [screenIndex, setScreenIndex] = useState(0);
+
+  // When files change, clamp screenIndex back into range — the AI may have
+  // added or removed screens. Without this the user can be stuck looking at a
+  // stale fallback screen after an edit.
+  useEffect(() => {
+    if (screens.length === 0) return;
+    if (screenIndex >= screens.length) {
+      setScreenIndex(0);
+    }
+  }, [screens.length, screenIndex]);
+
+  // Brief flash so the user can see "something just updated" even when screen
+  // titles stay the same across an edit. Triggers whenever generatedFiles
+  // changes reference *or* whenever the parent reports an update in progress.
+  const [justUpdated, setJustUpdated] = useState(false);
+  const filesRef = useRef(generatedFiles);
+  useEffect(() => {
+    if (filesRef.current === generatedFiles) return;
+    filesRef.current = generatedFiles;
+    setJustUpdated(true);
+    const timer = window.setTimeout(() => setJustUpdated(false), 900);
+    return () => window.clearTimeout(timer);
+  }, [generatedFiles]);
+
   const activeScreen = screens[screenIndex] ?? screens[0];
   const tabs = getTabLabelsFromPreview(preview).slice(0, 5);
 
@@ -144,7 +170,7 @@ export function MobilePreview({
         transition={{ duration: 0.35, ease: "easeOut" }}
         style={{ transformPerspective: 1200 }}
       >
-        <PhoneFrame device={device}>
+        <PhoneFrame device={device} isUpdating={isUpdating || justUpdated}>
           {activeScreen ? (
             <PreviewScreen
               preview={preview}
@@ -181,16 +207,22 @@ export function MobilePreview({
 function PhoneFrame({
   device,
   children,
+  isUpdating = false,
 }: {
   device: "ios" | "android";
   children: React.ReactNode;
+  isUpdating?: boolean;
 }) {
   const radius = device === "ios" ? "rounded-[44px]" : "rounded-[28px]";
   const innerRadius = device === "ios" ? "rounded-[36px]" : "rounded-[20px]";
 
   return (
     <div
-      className={`relative h-[580px] w-[280px] ${radius} border border-white/10 bg-background-secondary p-2.5 shadow-2xl shadow-black/60`}
+      className={`relative h-[580px] w-[280px] ${radius} border bg-background-secondary p-2.5 shadow-2xl shadow-black/60 transition-all duration-300 ${
+        isUpdating
+          ? "border-violet-400/60 shadow-violet-500/30"
+          : "border-white/10"
+      }`}
     >
       <div
         className={`relative h-full w-full overflow-hidden ${innerRadius} bg-[#0b1020]`}
@@ -201,6 +233,23 @@ function PhoneFrame({
           <div className="absolute left-1/2 top-3 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-black/80" />
         )}
         <div className="relative h-full w-full pt-9">{children}</div>
+
+        <AnimatePresence>
+          {isUpdating && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className={`pointer-events-none absolute inset-0 flex items-end justify-center bg-[radial-gradient(circle_at_top,rgba(124,58,237,0.18),transparent_55%)] ${innerRadius}`}
+            >
+              <div className="mb-3 flex items-center gap-2 rounded-full border border-violet-400/40 bg-black/55 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-violet-100 backdrop-blur">
+                <Loader2 className="h-3 w-3 animate-spin text-violet-300" />
+                Updating preview
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
