@@ -64,7 +64,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Billing foundation: billing page, Stripe checkout route, Stripe portal route, webhook subscription sync route.
 - Manual payments: authenticated screenshot upload route, private Supabase Storage bucket flow, admin screenshot signed-URL route, pending payment tracking, and manual payment approval/rejection routes.
 - Supabase foundation: browser client, server client, service-role admin client, schema, seed data, RLS policies.
-- GitHub foundation: connect and push API routes are present.
+- GitHub export: authenticated OAuth connect/callback routes, sanitized GitHub status route, repo list/create routes, server-side project export route, project Deploy modal flow, and export metadata tracking.
 
 ## Current architecture
 
@@ -83,6 +83,8 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Billing: Stripe checkout/portal/webhook routes are implemented, but Stripe environment values are currently empty.
 - Manual payment uploads: the client modal now posts once to `/api/manual-payments`, the server validates MIME/size, optimizes image uploads with `sharp`, writes screenshots into the private `payment-screenshots` bucket using the authenticated Supabase server client, maps bucket/RLS/size/timeout errors into safe JSON, and always returns a user-safe error message instead of surfacing a raw runtime error.
 - Manual payment submit flow: `/api/manual-payments` is now excluded from the global Supabase proxy matcher so multipart uploads do not pass through auth middleware, the route verifies auth once and then uses the service-role admin client for storage/database writes, ensures the `user_profiles` row exists before inserting into `manual_payments`, returns `{ success, paymentId, error }` JSON, and wraps cleanup in its own timeout so a failed insert can never leave the client waiting forever.
+- GitHub integration: `/api/github/connect` now starts OAuth with `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and `NEXT_PUBLIC_APP_URL`; `/api/github/callback` exchanges the code server-side and stores the token with the service-role client; `/api/github/status`, `/api/github/repos`, `/api/github/repos/create`, and `/api/projects/[id]/export/github` keep the access token server-only while letting the client connect, create/select repos, and export generated Expo files.
+- GitHub export pipeline: Qorvex exports only generated project files plus a synthesized `README.md` and `.gitignore`, validates repository ownership against the connected GitHub username, supports empty or existing repos by creating/updating a commit tree on the selected branch, updates `projects.github_repo`, and records export metadata in `deployments` plus `github_exports` when that table exists.
 
 ## Health check results
 
@@ -97,6 +99,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `/api/usage`: implemented. Authenticated users can now fetch their current daily AI credit snapshot, remaining balance, estimated cost, and UTC reset time for frontend indicators.
 - `/api/manual-payments`: implemented. Manual payment submission now goes through an authenticated server route with a 60 second screenshot upload timeout, server-side image optimization, friendly validation errors, and guaranteed loading-state cleanup in the modal client.
 - Manual payment client flow: the billing modal now logs submit state in the browser console, aborts the request after 65 seconds, shows readable failure toasts, refreshes `/billing` on success so the pending-payment banner appears immediately, closes the modal, and always clears the `Submitting...` state in `finally`.
+- GitHub routes: build-verified routes now include `/api/github/connect`, `/api/github/callback`, `/api/github/status`, `/api/github/repos`, `/api/github/repos/create`, and `/api/projects/[id]/export/github`.
 - Supabase client usage: checked. Client components/hooks/services use the browser client; server components and API routes use the server client or service-role admin client.
 - RLS policies in `supabase/schema.sql`: checked for `projects`, `generations`, `user_profiles`, and `subscriptions`.
 - Delete stability: `Delete Project` and `Delete All Error Projects` now go through authenticated server routes and always clear loading state in the client.
@@ -122,17 +125,21 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `daily_ai_usage`: RLS enabled in schema and migration. Users can select their own daily usage rows by `auth.uid() = user_id`; writes are handled server-side.
 - `subscriptions`: RLS enabled. Users can select their own subscription by `auth.uid() = user_id`. Inserts/updates are performed through Stripe webhook/admin server logic.
 - `payment-screenshots` bucket: upload paths are `auth.uid()/orderId/timestamp-filename.ext`. The required private-bucket insert policy is in `supabase/migration_manual_payments.sql`; service-role admin reads continue to bypass RLS through the server-side screenshot route.
+- `github_connections`: schema and migration now remove direct user `select` access so GitHub access tokens stay server-only. Apply `supabase/migration_github_export.sql` remotely to enforce that live.
+- `github_exports`: optional export metadata table added in schema/migration so GitHub repo URL, branch, and commit SHA can be persisted per export without polluting app version history.
 
 ## Remaining bugs / risks
 
 - Full authenticated `/api/generate` verification still needs a test account/session or explicit approval to create one.
 - The new `daily_ai_usage` table and generation token columns require the SQL migration (`supabase/migration_daily_ai_credits.sql`) to be applied in the remote Supabase project before production rollout.
+- The GitHub rollout needs `supabase/migration_github_export.sql` applied remotely so `github_connections` no longer exposes tokens via old `select` policies and `github_exports` can persist export metadata.
 - The current staged code generator uses a deterministic Expo template driven by AI-produced plan/screen specs. It is much more reliable for large prompts, but future quality work should keep enriching the generated component library and screen templates.
 - Project edit chat currently uses compact project context plus targeted file snippets instead of the full codebase. This is more reliable for everyday edits, but very large cross-cutting refactors may still need a broader file-selection strategy later.
 - Browser click-through verification for authenticated project detail editing, download export, deploy modals, and live preview switching still needs a real interactive session. The route-level and build-level checks are complete.
 - Browser click-through verification for the project card Delete dialog (open menu → Delete → Cancel/Delete) and the /settings Profile save round-trip (full name + language persists across refresh) still needs a real signed-in session. The component, build, and lint level checks are complete.
 - Stripe checkout/portal/webhook cannot fully work until Stripe environment variables are configured.
 - GitHub OAuth/push cannot fully work until GitHub environment variables are configured.
+- A full GitHub connect/create/export/re-export smoke test still needs a real signed-in browser session plus valid GitHub OAuth credentials; lint/build and route wiring are complete.
 - `supabase/schema.sql` has been inspected locally, but live Supabase policy drift has not been checked against the remote database.
 - Some source files contain mojibake text from previous encoding issues; it does not currently block build/lint, but user-facing copy should be cleaned in a focused pass.
 
@@ -147,5 +154,6 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Run an authenticated browser smoke test for project detail editing, download export, deploy modals, and logout after the next login session is available.
 - Configure Stripe test-mode values and verify checkout, portal, and webhook flows.
 - Configure GitHub OAuth values and verify connect/push flows.
+- Apply `supabase/migration_github_export.sql` remotely and verify the tightened `github_connections` RLS behavior against the live database.
 - Add lightweight integration tests for auth redirects, server-backed project deletion/export, and generation/chat API unauthorized/authorized paths.
 - Clean mojibake copy in UI strings and prompts before adding new features.

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Copy, Download, Rocket, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { GitHubExportModal } from "@/components/dashboard/GitHubExportModal";
 import { MobilePreview } from "@/components/generator/MobilePreview";
 import { AIChat } from "@/components/generator/AIChat";
 import {
@@ -45,6 +46,12 @@ interface AppVersion {
   created_at: string;
 }
 
+interface GitHubConnectionStatus {
+  connected: boolean;
+  githubUsername: string | null;
+  connectedAt: string | null;
+}
+
 interface ProjectDetailTabsProps {
   project: Project;
   versions: AppVersion[];
@@ -57,6 +64,8 @@ export function ProjectDetailTabs({
   initialTab,
 }: ProjectDetailTabsProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const hasGeneratedCode =
     project.status === "ready" &&
     project.generated_code &&
@@ -75,6 +84,9 @@ export function ProjectDetailTabs({
   );
   const [activeModal, setActiveModal] = useState<DeployModalKey>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [githubConnection, setGithubConnection] =
+    useState<GitHubConnectionStatus | null>(null);
+  const [isCheckingGitHub, setIsCheckingGitHub] = useState(false);
   const visibleFileList = useMemo(() => getVisibleProjectFiles(files), [files]);
   const [selectedFile, setSelectedFile] = useState<string | null>(
     visibleFileList[0] ?? null,
@@ -88,6 +100,112 @@ export function ProjectDetailTabs({
     if (!activeSelectedFile) return;
     void navigator.clipboard?.writeText(files[activeSelectedFile] ?? "");
     toast.success("Copied file contents");
+  }
+
+  async function fetchGitHubConnectionStatus(silent = false) {
+    if (!silent) {
+      setIsCheckingGitHub(true);
+    }
+
+    try {
+      const response = await withTimeout(
+        fetch("/api/github/status", {
+          method: "GET",
+          cache: "no-store",
+        }),
+        10000,
+        "GitHub status request timed out.",
+      );
+
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            success?: boolean;
+            connection?: GitHubConnectionStatus;
+            error?: string;
+          }
+        | null;
+
+      if (response.status === 401) {
+        setGithubConnection(null);
+        return null;
+      }
+
+      if (!response.ok || !payload?.success || !payload.connection) {
+        throw new Error(payload?.error ?? "Failed to load GitHub connection.");
+      }
+
+      setGithubConnection(payload.connection);
+      return payload.connection;
+    } catch (error) {
+      if (!silent) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to load GitHub connection.",
+        );
+      }
+      return null;
+    } finally {
+      if (!silent) {
+        setIsCheckingGitHub(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchGitHubConnectionStatus(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const githubStatus = searchParams.get("github");
+    if (!githubStatus) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const githubMessage = searchParams.get("githubMessage");
+      if (githubStatus === "connected") {
+        toast.success("GitHub connected successfully.");
+        void fetchGitHubConnectionStatus(true).then(() => {
+          setActiveModal("github");
+        });
+      } else if (githubStatus === "error") {
+        toast.error(githubMessage ?? "GitHub connection failed.");
+      }
+
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete("github");
+      nextParams.delete("githubMessage");
+      const nextQuery = nextParams.toString();
+      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [pathname, router, searchParams]);
+
+  async function handleGitHubClick() {
+    let connection = githubConnection;
+    if (!connection && !isCheckingGitHub) {
+      setIsCheckingGitHub(true);
+      try {
+        connection = await fetchGitHubConnectionStatus(true);
+      } finally {
+        setIsCheckingGitHub(false);
+      }
+    }
+
+    if (connection?.connected) {
+      setActiveModal("github");
+      return;
+    }
+
+    window.location.href = `/api/github/connect?redirectTo=${encodeURIComponent(
+      `${pathname}?tab=deploy`,
+    )}`;
   }
 
   async function downloadProjectFiles() {
@@ -309,10 +427,22 @@ export function ProjectDetailTabs({
             <DeployCard
               icon={Upload}
               title="Export to GitHub"
-              description="GitHub repo creation and push are coming soon. For now, download the Expo project files and import them manually."
-              cta="Connect GitHub"
-              badge="Coming soon"
-              onClick={() => setActiveModal("github")}
+              description={
+                githubConnection?.connected
+                  ? `Connected as @${githubConnection.githubUsername}. Create a repo or export to an existing one.`
+                  : "Connect your GitHub account, create or pick a repository, and push the generated Expo project files."
+              }
+              cta={
+                isCheckingGitHub
+                  ? "Checking..."
+                  : githubConnection?.connected
+                    ? "Export to GitHub"
+                    : "Connect GitHub"
+              }
+              onClick={() => {
+                void handleGitHubClick();
+              }}
+              disabled={isCheckingGitHub}
             />
             <DeployCard
               icon={Download}
@@ -333,21 +463,19 @@ export function ProjectDetailTabs({
         )}
       </div>
 
-      {activeModal === "github" && (
-        <InfoModal
-          title="GitHub export is coming soon"
-          onClose={() => setActiveModal(null)}
-        >
-          <p className="text-sm leading-relaxed text-text-secondary">
-            Qorvex will soon create a GitHub repository and push your generated
-            Expo code automatically.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-text-secondary">
-            For now, use <span className="text-white">Download files</span> to
-            export the current project and upload it to GitHub manually.
-          </p>
-        </InfoModal>
-      )}
+      <GitHubExportModal
+        open={activeModal === "github"}
+        onOpenChange={(open) => setActiveModal(open ? "github" : null)}
+        projectId={project.id}
+        projectName={project.name}
+        redirectPath={`${pathname}?tab=deploy`}
+        connection={githubConnection}
+        onConnectionRefresh={async () => {
+          const refreshed = await fetchGitHubConnectionStatus(true);
+          router.refresh();
+          return refreshed;
+        }}
+      />
 
       {activeModal === "checklist" && (
         <InfoModal

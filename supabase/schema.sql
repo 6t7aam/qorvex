@@ -143,9 +143,23 @@ create table if not exists public.deployments (
 create table if not exists public.github_connections (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references public.user_profiles(id) on delete cascade not null unique,
+  github_user_id bigint,
   github_username text not null,
   access_token text not null,
-  connected_at timestamptz not null default now()
+  connected_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.github_exports (
+  id uuid default uuid_generate_v4() primary key,
+  project_id uuid references public.projects(id) on delete cascade not null,
+  user_id uuid references public.user_profiles(id) on delete cascade not null,
+  repo_full_name text not null,
+  repo_url text not null,
+  branch text not null default 'main',
+  commit_sha text not null,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.app_versions (
@@ -179,6 +193,8 @@ create index if not exists idx_daily_ai_usage_user_id on public.daily_ai_usage(u
 create index if not exists idx_daily_ai_usage_usage_date on public.daily_ai_usage(usage_date);
 create index if not exists idx_deployments_project_id on public.deployments(project_id);
 create index if not exists idx_deployments_user_id    on public.deployments(user_id);
+create index if not exists idx_github_exports_project_id on public.github_exports(project_id);
+create index if not exists idx_github_exports_user_id on public.github_exports(user_id);
 create index if not exists idx_app_versions_project_id on public.app_versions(project_id);
 create index if not exists idx_prompts_user_id        on public.prompts(user_id);
 
@@ -288,6 +304,7 @@ alter table public.daily_ai_usage     enable row level security;
 alter table public.subscriptions      enable row level security;
 alter table public.deployments        enable row level security;
 alter table public.github_connections enable row level security;
+alter table public.github_exports     enable row level security;
 alter table public.app_versions       enable row level security;
 alter table public.prompts            enable row level security;
 alter table public.templates          enable row level security;
@@ -365,14 +382,33 @@ create policy "Users can create deployments"
 
 -- github_connections
 drop policy if exists "Users can view own github connection"   on public.github_connections;
-create policy "Users can view own github connection"
-  on public.github_connections for select
+drop policy if exists "Users can manage own github connection" on public.github_connections;
+drop policy if exists "Users can create own github connection" on public.github_connections;
+drop policy if exists "Users can update own github connection" on public.github_connections;
+drop policy if exists "Users can delete own github connection" on public.github_connections;
+
+create policy "Users can create own github connection"
+  on public.github_connections for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own github connection"
+  on public.github_connections for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own github connection"
+  on public.github_connections for delete
   using (auth.uid() = user_id);
 
-drop policy if exists "Users can manage own github connection" on public.github_connections;
-create policy "Users can manage own github connection"
-  on public.github_connections for all
-  using (auth.uid() = user_id)
+-- github_exports
+drop policy if exists "Users can view own github exports" on public.github_exports;
+create policy "Users can view own github exports"
+  on public.github_exports for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can create own github exports" on public.github_exports;
+create policy "Users can create own github exports"
+  on public.github_exports for insert
   with check (auth.uid() = user_id);
 
 -- app_versions

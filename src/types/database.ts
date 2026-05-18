@@ -110,9 +110,23 @@ export interface Subscription {
 export interface GithubConnection {
   id: string;
   user_id: string;
+  github_user_id?: number | null;
   github_username: string;
   access_token: string;
   connected_at: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface GithubExport {
+  id: string;
+  project_id: string;
+  user_id: string;
+  repo_full_name: string;
+  repo_url: string;
+  branch: string;
+  commit_sha: string;
+  created_at: string;
 }
 
 export interface Template {
