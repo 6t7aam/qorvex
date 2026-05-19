@@ -78,6 +78,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - AI provider layer: generation and edit routes now call a provider abstraction (`src/lib/ai`) that can be swapped to Gemini, Claude, OpenAI, or DeepSeek later without rewriting route logic.
 - Daily credit system: Qorvex now tracks prompt tokens, completion tokens, total tokens, estimated API cost, request counts, and active AI sessions in `daily_ai_usage` rows keyed by UTC date instead of limiting users by project count or weekly generation counters.
 - Bonus credit system: referral bonuses are stored separately in `user_credit_adjustments`, shown alongside daily credits in the dashboard/sidebar/generator UI, and consumed only after the current day's plan credits are exhausted.
+- Initial app generation charge: every new app generation from `/generate` now costs exactly 2,000 AI credits, defined by `INITIAL_APP_GENERATION_COST` in `src/lib/ai-credits.ts`. The charge is enforced server-side before the AI pipeline starts and is recorded as `initial_app_generation`.
 - AI: `/api/generate` now uses a staged pipeline instead of one giant completion. Stage 1 creates a compact app plan, Stage 2 expands screen specs, Stage 3 builds the file manifest, Stage 4 assembles project files in batches, and Stage 5 prepares preview metadata before persisting the project.
 - Token strategy: prompt text is compacted and deduplicated, features are capped and normalized, large requests show a staged-generation notice, model calls are JSON-first with low temperature, AI stages estimate budget before running, and code is no longer requested in a single oversized response.
 - Recovery: each AI-backed stage retries once, stage calls are timeout-bounded, later-stage failures preserve completed work, and the route can return a partial project payload with warnings instead of dropping the entire generation.
@@ -103,6 +104,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `/api/projects/[id]/download`: implemented for generated project export. Unauthenticated access is blocked server-side; authenticated users receive a downloadable JSON export of real generated files.
 - `/api/generate`: route is reachable and correctly returns HTTP 401 without an authenticated session. A true end-to-end authenticated generation run was not executed because it would require a real/test user session and would create Supabase rows plus call the configured Anthropic backend.
 - `/api/usage`: implemented. Authenticated users can now fetch their current daily AI credit snapshot, remaining balance, estimated cost, and UTC reset time for frontend indicators.
+- `/api/generate`: initial app generation now preflights available credits, blocks users below 2,000 credits with HTTP 402 JSON, creates a project/generation job, charges exactly 2,000 credits once through `credit_usage_events`, then records provider token/cost metrics without adding extra credit charges.
 - `/api/referrals/me`: implemented. Authenticated users can fetch their referral code, referral link, stats, recent referrals, and current referred-user status.
 - `/api/referrals/claim-signup`: implemented. Authenticated users can safely claim a stored referral code server-side after signup without trusting client reward amounts.
 - `/api/referrals/grant-reward`: implemented as an admin/internal route. Reward amounts are calculated server-side from the upgraded plan and duplicate rewards are blocked.
@@ -127,6 +129,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - Preview quality: generation prompts now request structured app metadata, multiple screens, realistic sections, sample data, and reusable components; the mobile preview renderer uses that structure and falls back to app-specific inferred layouts for older projects.
 - Large-app resilience: generation no longer depends on streaming a full Expo codebase from the model. The server now streams progress events for planning, screen generation, navigation, components, preview, and finalization while assembling files from staged structured output.
 - Credit-aware protection: AI routes now guard against overlapping requests, rapid-fire abuse, and low remaining credits before expensive stages run. Generation and edit flows also record provider/model usage metadata back into `generations`.
+- First-generation charging fix: the first generated app is no longer free because `/api/generate` now performs an explicit fixed-cost charge independent of model token usage. Daily credits are consumed first, then bonus referral credits fill any remainder.
 
 ## RLS policy status
 
@@ -141,12 +144,14 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 - `referral_codes`: RLS enabled. Users can read their own code; code creation/backfill happens server-side.
 - `referrals`: RLS enabled. Users can read referrals where they are the referrer or referred user; reward/status writes are server-side only.
 - `user_credit_adjustments`: RLS enabled. Users can read their own bonus-credit adjustments; writes happen through server-side reward/usage flows.
+- `credit_usage_events`: RLS enabled. Users can read their own fixed credit events; inserts/updates/deletes are intentionally server-side only. The unique `(user_id, event_type, request_id)` constraint prevents duplicate initial-generation charges for the same request.
 - Public SEO surfaces: public pages now have canonical URLs plus unique titles/descriptions, and private dashboard pages remain out of search indexes through metadata robots rules.
 
 ## Remaining bugs / risks
 
 - Full authenticated `/api/generate` verification still needs a test account/session or explicit approval to create one.
 - The new `daily_ai_usage` table and generation token columns require the SQL migration (`supabase/migration_daily_ai_credits.sql`) to be applied in the remote Supabase project before production rollout.
+- The fixed initial-generation charge requires `supabase/migration_initial_generation_credit_events.sql` to be applied remotely before production `/api/generate` can record idempotent charge events.
 - The referral rollout requires `supabase/migration_referrals.sql` to be applied in the remote Supabase project before `/referrals`, signup claims, and paid-upgrade rewards can work in production.
 - The GitHub rollout needs `supabase/migration_github_export.sql` applied remotely so `github_connections` no longer exposes tokens via old `select` policies and `github_exports` can persist export metadata.
 - The current staged code generator uses a deterministic Expo template driven by AI-produced plan/screen specs. It is much more reliable for large prompts, but future quality work should keep enriching the generated component library and screen templates.
@@ -165,6 +170,7 @@ server-side and shows a non-fatal warning banner instead of crashing the page.
 
 - Create a safe test account workflow or seed-only local Supabase path for repeatable authenticated `/api/generate` smoke tests.
 - Apply `supabase/migration_daily_ai_credits.sql` remotely and verify the new daily usage rows, generation token columns, and RLS policy behavior against the live database.
+- Apply `supabase/migration_initial_generation_credit_events.sql` remotely and verify one first-generation charge with 3,500 free credits leaves exactly 1,500 total available credits.
 - Apply `supabase/migration_referrals.sql` remotely and verify referral code backfill, signup claims, signup bonuses, and paid-upgrade reward grants against the live database.
 - Add a server-side usage summary card to billing so the new daily AI credit metrics are visible there even before client hydration.
 - Replace the generated `/og-image.png` and `/apple-icon` routes with final handcrafted marketing assets later if brand/design wants pixel-perfect raster exports; the current generated assets are production-safe defaults.

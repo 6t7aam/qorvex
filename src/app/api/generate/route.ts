@@ -1,7 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAIProvider, type AIUsage } from "@/lib/ai";
-import { beginAIUsageSession } from "@/lib/ai-usage.server";
-import { DAILY_CREDIT_CONFIG, getPlanDailyCreditLimit } from "@/lib/ai-credits";
+import {
+  CreditChargeError,
+  beginAIUsageSession,
+  chargeInitialAppGenerationCredits,
+  findCreditUsageEvent,
+  getDailyCreditSnapshot,
+} from "@/lib/ai-usage.server";
+import {
+  INITIAL_APP_GENERATION_COST,
+  INITIAL_APP_GENERATION_EVENT_TYPE,
+  getPlanDailyCreditLimit,
+} from "@/lib/ai-credits";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { executeGenerationPipeline } from "@/lib/generation-pipeline";
 import { getClientIP, hashIP } from "@/lib/ip-hash";
@@ -17,6 +27,7 @@ interface GenerateBody {
   features?: string[];
   platform?: "ios" | "android" | "both";
   projectName?: string;
+  requestId?: string;
 }
 
 const DEFAULT_COLORS = {
@@ -138,6 +149,65 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
   const provider = getAIProvider();
+  const requestId =
+    typeof body.requestId === "string" && body.requestId.trim()
+      ? body.requestId.trim().slice(0, 160)
+      : crypto.randomUUID();
+
+  try {
+    const duplicateEvent = await findCreditUsageEvent({
+      admin,
+      userId: user.id,
+      eventType: INITIAL_APP_GENERATION_EVENT_TYPE,
+      requestId,
+    });
+
+    if (duplicateEvent) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "This generation request is already being processed.",
+          projectId: duplicateEvent.project_id,
+        },
+        { status: 409 },
+      );
+    }
+  } catch (error) {
+    console.error("[generate] credit usage event lookup failed:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Credit tracking is not ready. Please apply the latest Supabase migration.",
+      },
+      { status: 500 },
+    );
+  }
+
+  const creditSnapshot = await getDailyCreditSnapshot({
+    admin,
+    userId: user.id,
+    plan: profileData.plan,
+    abuseDetected: profileData.abuse_detected ?? false,
+  });
+
+  console.info("[generate] initial credit preflight", {
+    userId: user.id,
+    requestId,
+    availableCredits: creditSnapshot.totalAvailableCredits,
+    generationCost: INITIAL_APP_GENERATION_COST,
+  });
+
+  if (creditSnapshot.totalAvailableCredits < INITIAL_APP_GENERATION_COST) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Not enough AI credits. Initial app generation costs 2,000 credits.",
+      },
+      { status: 402 },
+    );
+  }
+
   let usageSession:
     | Awaited<ReturnType<typeof beginAIUsageSession>>
     | null = null;
@@ -148,7 +218,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       plan: profileData.plan,
       abuseDetected: profileData.abuse_detected ?? false,
-      reserveCredits: DAILY_CREDIT_CONFIG[profileData.plan].softReserveCredits,
+      reserveCredits: INITIAL_APP_GENERATION_COST,
     });
   } catch (error) {
     const message =
@@ -159,11 +229,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
+        success: false,
         error: message,
         upgradeRequired: isUpgradeBlock,
         retryable: isQueueBlock,
       },
-      { status: isUpgradeBlock ? 403 : isQueueBlock ? 429 : 400 },
+      { status: isUpgradeBlock ? 402 : isQueueBlock ? 429 : 400 },
     );
   }
 
@@ -197,7 +268,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data: generation } = await admin
+  const { data: generation, error: generationError } = await admin
     .from("generations")
     .insert({
       user_id: user.id,
@@ -209,6 +280,79 @@ export async function POST(request: NextRequest) {
     })
     .select()
     .single<{ id: string }>();
+
+  if (generationError || !generation) {
+    await admin.from("projects").delete().eq("id", project.id);
+    if (usageSession) {
+      try {
+        await usageSession.release();
+      } catch (error) {
+        console.error("[generate] failed to release usage session:", error);
+      }
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: generationError?.message ?? "Could not create generation job",
+      },
+      { status: 500 },
+    );
+  }
+
+  try {
+    const charge = await chargeInitialAppGenerationCredits({
+      admin,
+      userId: user.id,
+      plan: profileData.plan,
+      abuseDetected: profileData.abuse_detected ?? false,
+      requestId,
+      projectId: project.id,
+      metadata: {
+        generation_id: generation.id,
+        source: "api_generate",
+      },
+    });
+
+    console.info("[generate] initial generation credit charge", {
+      userId: user.id,
+      requestId,
+      projectId: project.id,
+      generationId: generation.id,
+      cost: INITIAL_APP_GENERATION_COST,
+      alreadyCharged: charge.alreadyCharged,
+      remainingCredits: charge.snapshot.totalAvailableCredits,
+    });
+  } catch (error) {
+    console.error("[generate] initial generation credit charge failed:", {
+      userId: user.id,
+      requestId,
+      projectId: project.id,
+      error,
+    });
+    await admin.from("projects").delete().eq("id", project.id);
+    if (usageSession) {
+      try {
+        await usageSession.release();
+      } catch (releaseError) {
+        console.error("[generate] failed to release usage session:", releaseError);
+      }
+    }
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Could not charge initial app generation credits.";
+    const status = error instanceof CreditChargeError ? error.status : 500;
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+      },
+      { status },
+    );
+  }
 
   const encoder = new TextEncoder();
 
@@ -260,7 +404,7 @@ export async function POST(request: NextRequest) {
             },
             onUsage: async (usage) => {
               usageEntries.push(usage);
-              await usageSession!.recordUsage(usage);
+              await usageSession!.recordTokenUsage(usage);
             },
           },
         );

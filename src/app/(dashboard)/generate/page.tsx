@@ -15,7 +15,10 @@ import {
 import { useGenerationStore } from "@/stores/useGenerationStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useUIStore } from "@/stores/useUIStore";
-import { estimateGenerationCostUsd } from "@/lib/ai-credits";
+import {
+  INITIAL_APP_GENERATION_COST,
+  creditsToUsd,
+} from "@/lib/ai-credits";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 import type { GeneratedFile, UserProfile } from "@/types";
 import { GenerationProgress } from "@/components/generator/GenerationProgress";
@@ -137,7 +140,11 @@ function GeneratePageInner() {
   }, [upgradeRequired, setUpgradeModal]);
 
   const limitCheck = user
-    ? { allowed: usageLoading ? true : (usage?.totalAvailableCredits ?? 0) > 0 }
+    ? {
+        allowed: usageLoading
+          ? true
+          : (usage?.totalAvailableCredits ?? 0) >= INITIAL_APP_GENERATION_COST,
+      }
     : { allowed: true };
   const totalAvailableCredits = user
     ? usage?.totalAvailableCredits ?? 0
@@ -161,10 +168,7 @@ function GeneratePageInner() {
   const charFeedback = getCharFeedback(currentPrompt.length);
   const isLargeGenerationRequest =
     currentPrompt.length > 900 || features.length > 6;
-  const estimatedRequestCost = estimateGenerationCostUsd(
-    currentPrompt,
-    features.length,
-  );
+  const initialGenerationCostUsd = creditsToUsd(INITIAL_APP_GENERATION_COST);
 
   function toggleFeature(name: string) {
     setFeatures((prev) =>
@@ -334,13 +338,28 @@ function GeneratePageInner() {
                         ? `${usage.plan.toUpperCase()} plan • ${dailyRemainingCredits.toLocaleString()} daily + ${bonusCredits.toLocaleString()} bonus • resets in ${resetCountdown}`
                         : "Daily credits reset every 24 hours at 00:00 UTC."}
                     </div>
+                    <div className="mt-1 text-xs text-cyan-200">
+                      Initial generation costs{" "}
+                      {INITIAL_APP_GENERATION_COST.toLocaleString()} credits.
+                    </div>
+                    {usage &&
+                    usage.totalAvailableCredits < INITIAL_APP_GENERATION_COST ? (
+                      <div className="mt-1 text-xs text-amber-200">
+                        You need at least{" "}
+                        {INITIAL_APP_GENERATION_COST.toLocaleString()} AI credits
+                        to generate an app.
+                      </div>
+                    ) : null}
                   </div>
                   <div className="text-left sm:text-right">
                     <div className="text-xs uppercase tracking-wider text-text-muted">
-                      Estimated request cost
+                      Initial generation cost
                     </div>
                     <div className="text-sm font-semibold text-white">
-                      ~${estimatedRequestCost.toFixed(3)}
+                      {INITIAL_APP_GENERATION_COST.toLocaleString()} credits
+                    </div>
+                    <div className="mt-1 text-xs text-text-muted">
+                      ~${initialGenerationCostUsd.toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -582,9 +601,10 @@ function GeneratePageInner() {
               <button
                 type="button"
                 onClick={() => setUpgradeModal(true)}
+                title="You need at least 2,000 AI credits to generate an app."
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-8 py-5 text-lg font-bold text-amber-200 transition hover:bg-amber-500/20"
               >
-                Upgrade to continue
+                You need 2,000 credits to generate
               </button>
             )}
             <div className="mt-4 text-center">

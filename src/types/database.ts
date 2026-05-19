@@ -106,6 +106,17 @@ export interface DailyAIUsage {
   updated_at: string;
 }
 
+export interface CreditUsageEvent {
+  id: string;
+  user_id: string;
+  event_type: "initial_app_generation" | string;
+  amount: number;
+  request_id: string | null;
+  project_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface ManualPayment {
   id: string;
   user_id: string;

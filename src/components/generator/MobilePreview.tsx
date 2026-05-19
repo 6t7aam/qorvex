@@ -97,15 +97,7 @@ export function MobilePreview({
   const screens = preview.screens.slice(0, 6);
   const [screenIndex, setScreenIndex] = useState(0);
 
-  // When files change, clamp screenIndex back into range — the AI may have
-  // added or removed screens. Without this the user can be stuck looking at a
-  // stale fallback screen after an edit.
-  useEffect(() => {
-    if (screens.length === 0) return;
-    if (screenIndex >= screens.length) {
-      setScreenIndex(0);
-    }
-  }, [screens.length, screenIndex]);
+  const safeScreenIndex = screenIndex < screens.length ? screenIndex : 0;
 
   // Brief flash so the user can see "something just updated" even when screen
   // titles stay the same across an edit. Triggers whenever generatedFiles
@@ -120,7 +112,7 @@ export function MobilePreview({
     return () => window.clearTimeout(timer);
   }, [generatedFiles]);
 
-  const activeScreen = screens[screenIndex] ?? screens[0];
+  const activeScreen = screens[safeScreenIndex] ?? screens[0];
   const tabs = getTabLabelsFromPreview(preview).slice(0, 5);
 
   return (
@@ -151,7 +143,7 @@ export function MobilePreview({
                 type="button"
                 onClick={() => setScreenIndex(index)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  index === screenIndex
+                  index === safeScreenIndex
                     ? "bg-white/12 text-white"
                     : "bg-white/[0.03] text-text-secondary hover:text-white"
                 }`}

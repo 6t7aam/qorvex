@@ -3,6 +3,8 @@ import type { Plan } from "@/types";
 export const AI_CREDIT_UNIT_USD = 0.0001;
 export const MAX_ACTIVE_AI_REQUESTS = 1;
 export const MIN_REQUEST_INTERVAL_MS = 2500;
+export const INITIAL_APP_GENERATION_COST = 2000;
+export const INITIAL_APP_GENERATION_EVENT_TYPE = "initial_app_generation";
 
 export interface DailyCreditPlanConfig {
   dailyCredits: number;

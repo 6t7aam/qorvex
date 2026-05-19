@@ -2,6 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   DAILY_CREDIT_CONFIG,
+  INITIAL_APP_GENERATION_COST,
+  INITIAL_APP_GENERATION_EVENT_TYPE,
   MAX_ACTIVE_AI_REQUESTS,
   MIN_REQUEST_INTERVAL_MS,
   getPlanDailyCreditLimit,
@@ -13,7 +15,7 @@ import {
   consumeBonusCredits,
   getUserBonusCreditBalance,
 } from "@/lib/referrals.server";
-import type { DailyAIUsage, Plan } from "@/types";
+import type { CreditUsageEvent, DailyAIUsage, Plan } from "@/types";
 
 interface UsageSessionOptions {
   admin: SupabaseClient;
@@ -24,6 +26,16 @@ interface UsageSessionOptions {
 }
 
 type DailyUsageRecord = DailyAIUsage;
+
+export class CreditChargeError extends Error {
+  status: number;
+
+  constructor(message: string, status = 402) {
+    super(message);
+    this.name = "CreditChargeError";
+    this.status = status;
+  }
+}
 
 function toSnapshot(
   row: DailyUsageRecord,
@@ -114,6 +126,205 @@ export async function getDailyCreditSnapshot(options: {
   const bonusCredits = await getUserBonusCreditBalance(options.admin, options.userId);
 
   return toSnapshot(row, options.plan, options.abuseDetected ?? false, bonusCredits);
+}
+
+export async function findCreditUsageEvent(options: {
+  admin: SupabaseClient;
+  userId: string;
+  eventType: string;
+  requestId: string;
+}) {
+  const { data, error } = await options.admin
+    .from("credit_usage_events")
+    .select("*")
+    .eq("user_id", options.userId)
+    .eq("event_type", options.eventType)
+    .eq("request_id", options.requestId)
+    .maybeSingle<CreditUsageEvent>();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? null;
+}
+
+async function insertBonusCreditDebit(
+  admin: SupabaseClient,
+  input: {
+    userId: string;
+    amount: number;
+    eventType: string;
+    requestId: string;
+    projectId: string | null;
+    eventId: string;
+    usageDate: string;
+  },
+) {
+  if (input.amount <= 0) return;
+
+  const { error } = await admin.from("user_credit_adjustments").insert({
+    user_id: input.userId,
+    amount: -Math.abs(input.amount),
+    reason: input.eventType,
+    metadata: {
+      usage_date: input.usageDate,
+      request_id: input.requestId,
+      project_id: input.projectId,
+      credit_usage_event_id: input.eventId,
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function chargeInitialAppGenerationCredits(options: {
+  admin: SupabaseClient;
+  userId: string;
+  plan: Plan;
+  abuseDetected?: boolean;
+  requestId: string;
+  projectId: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const {
+    admin,
+    userId,
+    plan,
+    abuseDetected = false,
+    requestId,
+    projectId,
+    metadata,
+  } = options;
+  const window = getUtcUsageWindow();
+  const existing = await findCreditUsageEvent({
+    admin,
+    userId,
+    eventType: INITIAL_APP_GENERATION_EVENT_TYPE,
+    requestId,
+  });
+
+  if (existing) {
+    const latestRow = await getOrCreateDailyUsageRow(
+      admin,
+      userId,
+      window.usageDate,
+    );
+    const latestBonusCredits = await getUserBonusCreditBalance(admin, userId);
+    return {
+      event: existing,
+      alreadyCharged: true,
+      snapshot: toSnapshot(latestRow, plan, abuseDetected, latestBonusCredits),
+    };
+  }
+
+  const latest = await getOrCreateDailyUsageRow(admin, userId, window.usageDate);
+  const limitCredits = getPlanDailyCreditLimit(plan, abuseDetected);
+  const bonusCredits = await getUserBonusCreditBalance(admin, userId);
+  const dailyRemainingCredits = Math.max(
+    0,
+    limitCredits - (latest.credits_used ?? 0),
+  );
+  const totalAvailableCredits =
+    dailyRemainingCredits + Math.max(0, bonusCredits);
+
+  if (totalAvailableCredits < INITIAL_APP_GENERATION_COST) {
+    throw new CreditChargeError(
+      "Not enough AI credits. Initial app generation costs 2,000 credits.",
+      402,
+    );
+  }
+
+  const dailyCreditsToUse = Math.min(
+    INITIAL_APP_GENERATION_COST,
+    dailyRemainingCredits,
+  );
+  const bonusCreditsToUse = Math.max(
+    0,
+    INITIAL_APP_GENERATION_COST - dailyCreditsToUse,
+  );
+
+  const { data: event, error: eventError } = await admin
+    .from("credit_usage_events")
+    .insert({
+      user_id: userId,
+      event_type: INITIAL_APP_GENERATION_EVENT_TYPE,
+      amount: INITIAL_APP_GENERATION_COST,
+      request_id: requestId,
+      project_id: projectId,
+      metadata: {
+        ...metadata,
+        daily_credits_used: dailyCreditsToUse,
+        bonus_credits_used: bonusCreditsToUse,
+        usage_date: window.usageDate,
+      },
+    })
+    .select("*")
+    .single<CreditUsageEvent>();
+
+  if (eventError || !event) {
+    if (eventError?.code === "23505") {
+      const duplicated = await findCreditUsageEvent({
+        admin,
+        userId,
+        eventType: INITIAL_APP_GENERATION_EVENT_TYPE,
+        requestId,
+      });
+      if (duplicated) {
+        const latestBonusCredits = await getUserBonusCreditBalance(admin, userId);
+        return {
+          event: duplicated,
+          alreadyCharged: true,
+          snapshot: toSnapshot(latest, plan, abuseDetected, latestBonusCredits),
+        };
+      }
+    }
+
+    throw eventError ?? new Error("Could not create credit usage event");
+  }
+
+  const { data: chargedDaily, error: dailyError } = await admin
+    .from("daily_ai_usage")
+    .update({
+      credits_used: (latest.credits_used ?? 0) + dailyCreditsToUse,
+    })
+    .eq("id", latest.id)
+    .select("*")
+    .single<DailyUsageRecord>();
+
+  if (dailyError || !chargedDaily) {
+    await admin.from("credit_usage_events").delete().eq("id", event.id);
+    throw dailyError ?? new Error("Could not charge daily AI credits");
+  }
+
+  try {
+    await insertBonusCreditDebit(admin, {
+      userId,
+      amount: bonusCreditsToUse,
+      eventType: INITIAL_APP_GENERATION_EVENT_TYPE,
+      requestId,
+      projectId,
+      eventId: event.id,
+      usageDate: window.usageDate,
+    });
+  } catch (error) {
+    await admin
+      .from("daily_ai_usage")
+      .update({ credits_used: latest.credits_used ?? 0 })
+      .eq("id", latest.id);
+    await admin.from("credit_usage_events").delete().eq("id", event.id);
+    throw error;
+  }
+
+  const nextBonusCredits = Math.max(0, bonusCredits - bonusCreditsToUse);
+
+  return {
+    event,
+    alreadyCharged: false,
+    snapshot: toSnapshot(chargedDaily, plan, abuseDetected, nextBonusCredits),
+  };
 }
 
 export async function beginAIUsageSession({
@@ -236,6 +447,30 @@ export async function beginAIUsageSession({
 
       const nextBonusCredits = Math.max(0, bonusCredits - bonusCreditsToUse);
       return toSnapshot(next, plan, abuseDetected, nextBonusCredits);
+    },
+    async recordTokenUsage(usage: AIUsage) {
+      const latest = await getOrCreateDailyUsageRow(admin, userId, window.usageDate);
+      const bonusCredits = await getUserBonusCreditBalance(admin, userId);
+
+      const { data: next, error } = await admin
+        .from("daily_ai_usage")
+        .update({
+          prompt_tokens: (latest.prompt_tokens ?? 0) + usage.promptTokens,
+          completion_tokens:
+            (latest.completion_tokens ?? 0) + usage.completionTokens,
+          total_tokens: (latest.total_tokens ?? 0) + usage.totalTokens,
+          estimated_cost_usd:
+            Number(latest.estimated_cost_usd ?? 0) + usage.estimatedCostUsd,
+        })
+        .eq("id", latest.id)
+        .select("*")
+        .single<DailyUsageRecord>();
+
+      if (error || !next) {
+        throw error ?? new Error("Could not record AI token usage");
+      }
+
+      return toSnapshot(next, plan, abuseDetected, bonusCredits);
     },
     async release() {
       const latest = await getOrCreateDailyUsageRow(admin, userId, window.usageDate);

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { GeneratedFile, GenerationProgress } from "@/types";
 import { toGeneratedFiles } from "@/lib/project-artifacts";
+import { USAGE_UPDATED_EVENT } from "@/hooks/useDailyUsage";
 
 export interface GenerationFormPayload {
   prompt: string;
@@ -9,6 +10,7 @@ export interface GenerationFormPayload {
   features: string[];
   platform: "ios" | "android" | "both";
   projectName?: string;
+  requestId?: string;
 }
 
 interface GenerationStreamEvent {
@@ -90,6 +92,12 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
   setError: (error) => set({ error, isGenerating: false }),
   reset: () => set(initialState),
   startGenerationFlow: async (form) => {
+    if (get().isGenerating) {
+      return;
+    }
+
+    const requestId = form.requestId ?? crypto.randomUUID();
+
     set({
       isGenerating: true,
       currentPrompt: form.prompt,
@@ -104,7 +112,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, requestId }),
       });
 
       if (response.status === 401) {
@@ -115,7 +123,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
         return;
       }
 
-      if (response.status === 403) {
+      if (response.status === 402 || response.status === 403) {
         const body = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
@@ -123,6 +131,17 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
           isGenerating: false,
           upgradeRequired: true,
           error: body?.error ?? "Generation limit reached.",
+        });
+        return;
+      }
+
+      if (response.status === 409) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        set({
+          isGenerating: false,
+          error: body?.error ?? "This generation request is already running.",
         });
         return;
       }
@@ -190,6 +209,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 
           if (isResultEvent(event)) {
             receivedResult = true;
+            window.dispatchEvent(new Event(USAGE_UPDATED_EVENT));
             set((state) => ({
               isGenerating: false,
               generatedFiles: toGeneratedFiles(event.files),
@@ -214,6 +234,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
           }
 
           if (event.type === "error") {
+            window.dispatchEvent(new Event(USAGE_UPDATED_EVENT));
             set((state) => ({
               isGenerating: false,
               error: event.error ?? "Generation failed.",
@@ -231,6 +252,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
           const event = JSON.parse(buffer.trim()) as GenerationStreamEvent;
           if (isResultEvent(event)) {
             receivedResult = true;
+            window.dispatchEvent(new Event(USAGE_UPDATED_EVENT));
             set({
               isGenerating: false,
               generatedFiles: toGeneratedFiles(event.files),

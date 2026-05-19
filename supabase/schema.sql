@@ -95,6 +95,18 @@ create table if not exists public.daily_ai_usage (
   unique (user_id, usage_date)
 );
 
+create table if not exists public.credit_usage_events (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.user_profiles(id) on delete cascade not null,
+  event_type text not null,
+  amount integer not null check (amount > 0),
+  request_id text,
+  project_id uuid references public.projects(id) on delete set null,
+  metadata jsonb,
+  created_at timestamptz not null default now(),
+  unique (user_id, event_type, request_id)
+);
+
 create table if not exists public.referral_codes (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references auth.users(id) on delete cascade not null unique,
@@ -221,6 +233,9 @@ create index if not exists idx_generations_user_id    on public.generations(user
 create index if not exists idx_generations_project_id on public.generations(project_id);
 create index if not exists idx_daily_ai_usage_user_id on public.daily_ai_usage(user_id);
 create index if not exists idx_daily_ai_usage_usage_date on public.daily_ai_usage(usage_date);
+create index if not exists idx_credit_usage_events_user_id on public.credit_usage_events(user_id);
+create index if not exists idx_credit_usage_events_project_id on public.credit_usage_events(project_id);
+create index if not exists idx_credit_usage_events_event_type on public.credit_usage_events(event_type);
 create index if not exists idx_referral_codes_user_id on public.referral_codes(user_id);
 create index if not exists idx_referrals_referrer_user_id on public.referrals(referrer_user_id);
 create index if not exists idx_referrals_referred_user_id on public.referrals(referred_user_id);
@@ -349,6 +364,7 @@ alter table public.user_profiles      enable row level security;
 alter table public.projects           enable row level security;
 alter table public.generations        enable row level security;
 alter table public.daily_ai_usage     enable row level security;
+alter table public.credit_usage_events enable row level security;
 alter table public.referral_codes     enable row level security;
 alter table public.referrals          enable row level security;
 alter table public.user_credit_adjustments enable row level security;
@@ -412,6 +428,12 @@ create policy "Users can create generations"
 drop policy if exists "Users can view own daily ai usage" on public.daily_ai_usage;
 create policy "Users can view own daily ai usage"
   on public.daily_ai_usage for select
+  using (auth.uid() = user_id);
+
+-- credit_usage_events
+drop policy if exists "Users can view own credit usage events" on public.credit_usage_events;
+create policy "Users can view own credit usage events"
+  on public.credit_usage_events for select
   using (auth.uid() = user_id);
 
 -- referral_codes

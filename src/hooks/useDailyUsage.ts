@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { formatResetCountdown, type DailyCreditSnapshot } from "@/lib/ai-credits";
 import { useAppStore } from "@/stores/useAppStore";
 
+export const USAGE_UPDATED_EVENT = "qorvex:usage-updated";
+
 interface UseDailyUsageResult {
   usage: DailyCreditSnapshot | null;
   isLoading: boolean;
@@ -29,32 +31,39 @@ export function useDailyUsage(): UseDailyUsageResult {
 
     let cancelled = false;
 
-    fetch("/api/usage", { cache: "no-store" })
-      .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as
-          | { usage?: DailyCreditSnapshot; error?: string }
-          | null;
+    function loadUsage() {
+      setError(null);
+      fetch("/api/usage", { cache: "no-store" })
+        .then(async (response) => {
+          const payload = (await response.json().catch(() => null)) as
+            | { usage?: DailyCreditSnapshot; error?: string }
+            | null;
 
-        if (!response.ok) {
-          throw new Error(payload?.error ?? "Could not load daily AI usage");
-        }
+          if (!response.ok) {
+            throw new Error(payload?.error ?? "Could not load daily AI usage");
+          }
 
-        if (!cancelled) {
-          setUsage(payload?.usage ?? null);
-        }
-      })
-      .catch((fetchError) => {
-        if (!cancelled) {
-          setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : "Could not load daily AI usage",
-          );
-        }
-      });
+          if (!cancelled) {
+            setUsage(payload?.usage ?? null);
+          }
+        })
+        .catch((fetchError) => {
+          if (!cancelled) {
+            setError(
+              fetchError instanceof Error
+                ? fetchError.message
+                : "Could not load daily AI usage",
+            );
+          }
+        });
+    }
+
+    loadUsage();
+    window.addEventListener(USAGE_UPDATED_EVENT, loadUsage);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(USAGE_UPDATED_EVENT, loadUsage);
     };
   }, [user]);
 
