@@ -93,11 +93,33 @@ Return one strict JSON object only:
 {
   "message": "Short reply describing the change",
   "versionSummary": "One-sentence version note",
-  "updatedPreview": { ...partial preview model... }
+  "updatedPreview": {
+    "appName": "string (optional)",
+    "description": "string (optional)",
+    "theme": {
+      "primary": "CSS color string (e.g. #7c3aed)",
+      "secondary": "CSS color string",
+      "accent": "CSS color string",
+      "background": "CSS color string — single value only (hex like #ADD8E6, rgb(...), or a single named color like lightblue)"
+    },
+    "navigation": { "type": "tabs", "tabs": ["string"] },
+    "screens": [ ...same shape as the existing preview screens... ],
+    "components": ["string"],
+    "sampleData": {}
+  }
 }
 
 Rules:
 - Do NOT touch project files. Use updatedPreview only.
+- Theme color fields MUST be plain CSS color strings. Never objects or
+  multi-word values. "light blue" must be written as "#ADD8E6" or
+  "lightblue" (no space). When the user names a color, output a real hex
+  that matches that name.
+- When you say in your "message" that you changed a color, the value in
+  updatedPreview.theme MUST actually be that color. Do not claim one
+  color and write a different one.
+- Only include the preview fields you actually changed; omitted fields
+  keep their previous value.
 - Keep the response under ~400 tokens.
 - No markdown, no code fences, no commentary outside JSON.`;
 

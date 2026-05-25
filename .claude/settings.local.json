@@ -12,7 +12,9 @@
       "Bash(psql --version)",
       "Bash(node ./_test-gen.mjs)",
       "Bash(kill %1)",
-      "Bash(pkill -f \"next dev\")"
+      "Bash(pkill -f \"next dev\")",
+      "Bash(node ./_inspect-meditation.mjs)",
+      "Bash(npx tsc *)"
     ]
   }
 }

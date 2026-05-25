@@ -162,7 +162,11 @@ export function MobilePreview({
         transition={{ duration: 0.35, ease: "easeOut" }}
         style={{ transformPerspective: 1200 }}
       >
-        <PhoneFrame device={device} isUpdating={isUpdating || justUpdated}>
+        <PhoneFrame
+          device={device}
+          isUpdating={isUpdating || justUpdated}
+          background={preview.theme.background}
+        >
           {activeScreen ? (
             <PreviewScreen
               preview={preview}
@@ -200,13 +204,16 @@ function PhoneFrame({
   device,
   children,
   isUpdating = false,
+  background,
 }: {
   device: "ios" | "android";
   children: React.ReactNode;
   isUpdating?: boolean;
+  background?: string;
 }) {
   const radius = device === "ios" ? "rounded-[44px]" : "rounded-[28px]";
   const innerRadius = device === "ios" ? "rounded-[36px]" : "rounded-[20px]";
+  const innerBackground = background && background.trim() ? background : "#0b1020";
 
   return (
     <div
@@ -217,7 +224,8 @@ function PhoneFrame({
       }`}
     >
       <div
-        className={`relative h-full w-full overflow-hidden ${innerRadius} bg-[#0b1020]`}
+        className={`relative h-full w-full overflow-hidden ${innerRadius}`}
+        style={{ background: innerBackground }}
       >
         {device === "ios" ? (
           <div className="absolute left-1/2 top-2 h-1.5 w-20 -translate-x-1/2 rounded-full bg-black/70" />

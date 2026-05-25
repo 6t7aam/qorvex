@@ -614,6 +614,34 @@ function inferPreviewFromPrompt(
   };
 }
 
+const CSS_COLOR_PATTERN =
+  /^(#[0-9a-f]{3,8}|rgb\(.+\)|rgba\(.+\)|hsl\(.+\)|hsla\(.+\)|linear-gradient\(.+\)|radial-gradient\(.+\)|conic-gradient\(.+\)|[a-z]+)$/i;
+
+function normalizeCssColor(value: unknown, fallback: string): string {
+  if (typeof value !== "string") {
+    // AI sometimes returns objects like { color: "#1A1A1A", pattern: "..." }.
+    // Recover by reading a nested `color` field, else fall back.
+    if (
+      value &&
+      typeof value === "object" &&
+      typeof (value as Record<string, unknown>).color === "string"
+    ) {
+      return normalizeCssColor((value as Record<string, unknown>).color, fallback);
+    }
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  // Gradients legitimately contain spaces; check those against the trimmed
+  // form. For everything else (hex, rgb(), named colors), collapse internal
+  // spaces so that "light blue" → "lightblue".
+  if (/^(linear|radial|conic)-gradient\(/i.test(trimmed)) {
+    return CSS_COLOR_PATTERN.test(trimmed.replace(/\s+/g, "")) ? trimmed : fallback;
+  }
+  const single = trimmed.replace(/\s+/g, "");
+  return CSS_COLOR_PATTERN.test(single) ? single : fallback;
+}
+
 function normalizePreviewModel(
   input: Partial<ProjectPreviewModel> | null | undefined,
   fallback: ProjectPreviewModel,
@@ -628,10 +656,16 @@ function normalizePreviewModel(
     appName: input?.appName?.trim() || fallback.appName,
     description: input?.description?.trim() || fallback.description,
     theme: {
-      primary: input?.theme?.primary || fallback.theme.primary,
-      secondary: input?.theme?.secondary || fallback.theme.secondary,
-      accent: input?.theme?.accent || fallback.theme.accent,
-      background: input?.theme?.background || fallback.theme.background,
+      primary: normalizeCssColor(input?.theme?.primary, fallback.theme.primary),
+      secondary: normalizeCssColor(
+        input?.theme?.secondary,
+        fallback.theme.secondary,
+      ),
+      accent: normalizeCssColor(input?.theme?.accent, fallback.theme.accent),
+      background: normalizeCssColor(
+        input?.theme?.background,
+        fallback.theme.background ?? "#0b1020",
+      ),
     },
     navigation: {
       type:
