@@ -1,0 +1,124 @@
+<!--
+  Qorvex — Change Email Address template
+  Paste into: Supabase → Authentication → Email Templates → "Change Email Address"
+  Subject: Confirm your new Qorvex email address
+
+  Variables:
+    {{ .ConfirmationURL }}  — confirmation link
+    {{ .Email }}            — current email
+    {{ .NewEmail }}         — requested new email
+-->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="supported-color-schemes" content="dark light" />
+    <title>Confirm your new Qorvex email</title>
+  </head>
+  <body
+    style="margin:0;padding:0;background-color:#06060a;color:#e5e5e5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;"
+  >
+    <div
+      style="display:none;font-size:1px;color:#06060a;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;"
+    >
+      Confirm the email change on your Qorvex account.
+    </div>
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color:#06060a;"
+    >
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table
+            role="presentation"
+            width="560"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width:560px;width:100%;background:#0d0d18;border:1px solid rgba(255,255,255,0.06);border-radius:24px;overflow:hidden;"
+          >
+            <tr>
+              <td
+                height="3"
+                style="line-height:3px;font-size:3px;background:linear-gradient(90deg,#7c3aed 0%,#c026d3 50%,#06b6d4 100%);"
+              >
+                &nbsp;
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:40px 32px 24px;">
+                <img
+                  src="https://www.qorvex.mov/email-logo.png?v=1"
+                  alt="Qorvex"
+                  width="80"
+                  height="80"
+                  style="display:block;border:0;outline:none;text-decoration:none;border-radius:20px;"
+                />
+                <div
+                  style="margin-top:18px;font-size:13px;letter-spacing:0.25em;text-transform:uppercase;color:#a78bfa;font-weight:600;"
+                >
+                  Email change
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:0 32px 8px;">
+                <h1
+                  style="margin:0;font-size:28px;line-height:1.25;font-weight:700;color:#ffffff;letter-spacing:-0.5px;"
+                >
+                  Confirm your new email
+                </h1>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:14px 40px 24px;">
+                <p style="margin:0;font-size:15px;line-height:1.6;color:#9b9bb0;">
+                  You asked to change your Qorvex sign-in email from
+                  <span style="color:#ffffff;">{{ .Email }}</span> to
+                  <span style="color:#ffffff;">{{ .NewEmail }}</span>. Tap
+                  below to confirm the change.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:8px 32px 12px;">
+                <a
+                  href="{{ .ConfirmationURL }}"
+                  target="_blank"
+                  style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;background:linear-gradient(135deg,#7c3aed 0%,#c026d3 50%,#06b6d4 100%);border-radius:12px;box-shadow:0 12px 30px rgba(124,58,237,0.35);"
+                >
+                  Confirm new email →
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:20px 40px 32px;">
+                <p style="margin:0;font-size:12px;line-height:1.6;color:#65657a;">
+                  Didn&rsquo;t request this change? Reply to this email or
+                  contact
+                  <a
+                    href="mailto:security@qorvex.mov"
+                    style="color:#a78bfa;text-decoration:underline;"
+                    >security@qorvex.mov</a
+                  >
+                  immediately.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p
+            style="margin:24px 0 0;font-size:11px;line-height:1.6;color:#4a4a5a;letter-spacing:0.5px;text-transform:uppercase;text-align:center;"
+          >
+            Qorvex · AI Mobile App Builder
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
