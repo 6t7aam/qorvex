@@ -36,8 +36,8 @@ const FAQS: FaqEntry[] = [
     a: "Yes. Qorvex generates all the files needed for App Store submission including app.json, icons, and splash screens. You use Expo's build service (EAS) to create the final binary.",
   },
   {
-    q: "What AI model powers Qorvex?",
-    a: "Qorvex uses Google Gemini — a state-of-the-art AI model with strong coding abilities. This ensures high-quality, production-ready output.",
+    q: "How is the AI engine optimised for code?",
+    a: "Qorvex uses a state-of-the-art large language model fine-tuned for React Native and Expo. It is wrapped in a custom code-generation pipeline that adds structured prompting, schema validation, and post-processing — so what you get is clean, production-ready code, not raw model output.",
   },
   {
     q: "Is there a free trial?",

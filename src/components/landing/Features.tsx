@@ -24,7 +24,7 @@ const FEATURES: Feature[] = [
     icon: Sparkles,
     title: "AI-Powered Generation",
     description:
-      "Describe your app in plain English. Gemini AI generates complete React Native code with screens, navigation, and logic.",
+      "Describe your app in plain English. Our AI engine generates complete React Native code with screens, navigation, and logic.",
     accent: "#a78bfa",
   },
   {
@@ -167,7 +167,7 @@ const STEPS = [
     num: "02",
     title: "AI generates everything",
     description:
-      "Gemini AI writes the complete React Native app — screens, navigation, Supabase backend, auth flow, and business logic.",
+      "Our AI engine writes the complete React Native app — screens, navigation, Supabase backend, auth flow, and business logic.",
   },
   {
     num: "03",

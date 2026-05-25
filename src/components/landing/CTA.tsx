@@ -8,7 +8,7 @@ const BADGES = [
   { label: "React Native", Icon: Smartphone },
   { label: "Expo", Icon: Cloud },
   { label: "Supabase", Icon: Database },
-  { label: "Gemini AI", Icon: Sparkles },
+  { label: "TypeScript", Icon: Sparkles },
 ];
 
 export function CTA() {

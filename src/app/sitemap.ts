@@ -6,6 +6,8 @@ const PUBLIC_ROUTES = [
   { path: "/pricing", priority: 0.9, changeFrequency: "weekly" },
   { path: "/signup", priority: 0.8, changeFrequency: "weekly" },
   { path: "/login", priority: 0.4, changeFrequency: "monthly" },
+  { path: "/terms", priority: 0.3, changeFrequency: "yearly" },
+  { path: "/privacy", priority: 0.3, changeFrequency: "yearly" },
 ] as const satisfies ReadonlyArray<{
   path: string;
   priority: number;

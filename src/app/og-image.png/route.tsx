@@ -220,7 +220,7 @@ export async function GET() {
                   boxShadow: "0 0 14px rgba(168,85,247,0.9)",
                 }}
               />
-              Powered by Gemini AI
+              AI-powered · iOS &amp; Android
             </div>
             <div
               style={{
@@ -274,7 +274,7 @@ export async function GET() {
                 "React Native",
                 "Expo",
                 "Supabase",
-                "Gemini AI",
+                "TypeScript",
               ].map((label) => (
                 <div
                   key={label}

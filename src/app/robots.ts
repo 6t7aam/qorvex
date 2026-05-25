@@ -6,6 +6,8 @@ const ALLOWED_PUBLIC_PATHS = [
   "/pricing",
   "/login",
   "/signup",
+  "/terms",
+  "/privacy",
   "/favicon.svg",
   "/icon.svg",
   "/apple-icon",

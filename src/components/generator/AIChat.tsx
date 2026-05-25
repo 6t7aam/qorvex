@@ -368,7 +368,7 @@ export function AIChat({
                 <span className="text-violet-300">{status}</span>
               </>
             ) : (
-              "Powered by Claude AI"
+              "AI-powered code generation"
             )}
           </span>
           {lastFailedMessage && !sending ? (

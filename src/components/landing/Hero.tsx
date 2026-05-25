@@ -138,7 +138,7 @@ export function Hero() {
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
                 </span>
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                Powered by Gemini AI
+                New · AI-powered app generation
               </span>
             </div>
           </motion.div>
@@ -193,16 +193,17 @@ export function Hero() {
                 </span>
               </span>
             </Link>
-            <button
-              type="button"
+            <Link
+              href="#how-it-works"
+              scroll
               className="group glass-border relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-white/[0.02] px-6 py-3.5 text-base font-medium text-white transition hover:border-violet-400/40 hover:bg-white/[0.06]"
             >
               <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/15 ring-1 ring-violet-400/30">
                 <span className="absolute inset-0 rounded-full bg-violet-500/30 animate-ripple" />
                 <Play className="relative h-3 w-3 text-violet-200" />
               </span>
-              Watch demo
-            </button>
+              Watch how it works
+            </Link>
           </motion.div>
 
           <motion.div

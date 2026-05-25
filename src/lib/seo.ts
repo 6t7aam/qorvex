@@ -10,7 +10,7 @@ export const QORVEX_SHORT_DESCRIPTION =
   "Turn one sentence into a full React Native + Expo app. AI generation, live mobile preview, chat editor, GitHub export.";
 export const QORVEX_BRAND_TAGLINE =
   "AI mobile app builder that turns ideas into React Native and Expo apps.";
-export const QORVEX_OG_IMAGE_PATH = "/og-image.png?v=5";
+export const QORVEX_OG_IMAGE_PATH = "/og-image.png?v=6";
 export const QORVEX_TWITTER_HANDLE = "@qorvex";
 export const QORVEX_DEFAULT_LOCALE = "en_US";
 
