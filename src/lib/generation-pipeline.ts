@@ -1379,7 +1379,7 @@ function buildPlanPrompt(input: GenerationPipelineInput) {
 
   return {
     systemPrompt:
-      "You are planning a production-quality Expo mobile app. Respond with one compact JSON object only.",
+      "You are a principal product designer and Expo architect planning a premium, production-quality mobile app. Be concrete, app-specific, and commercially polished. Respond with one compact JSON object only.",
     prompt: `Create an app plan JSON.
 appName: ${input.projectName}
 platform: ${input.platform}
@@ -1407,6 +1407,9 @@ Rules:
 - include auth or onboarding when relevant
 - include profile or settings
 - tabs should be concise
+- avoid generic filler such as repeated 'Welcome' dashboards unless the product truly needs it
+- prefer differentiated flows, clear user value, and realistic product entities
+- make the information architecture feel like a launch-ready app, not a demo
 - no markdown`,
   };
 }
@@ -1414,7 +1417,7 @@ Rules:
 function buildScreenPrompt(plan: AppPlan) {
   return {
     systemPrompt:
-      "You convert app plans into rich mobile screen specs. Respond with one compact JSON object only.",
+      "You convert mobile app plans into rich, premium screen specs for a high-end Expo product. Make the screens feel purposeful, dense, and app-specific rather than generic. Respond with one compact JSON object only.",
     prompt: `Expand this plan into detailed screen specs.
 plan: ${JSON.stringify({
       appName: plan.appName,
@@ -1458,6 +1461,10 @@ Rules:
 - include app-specific labels and sample content
 - include charts only when domain-relevant
 - do not repeat the same generic wording across screens
+- the home screen should feel immediately useful, not like placeholder marketing copy
+- vary section structure between screens; avoid cloning the same card pattern everywhere
+- include specific metrics, lists, CTAs, and microcopy that match the app domain
+- prefer practical depth over decorative filler
 - no markdown`,
   };
 }
@@ -1515,7 +1522,7 @@ export async function executeGenerationPipeline(
     stageName: "plan stage",
     systemPrompt: planPrompt.systemPrompt,
     prompt: planPrompt.prompt,
-    maxTokens: 2400,
+    maxTokens: 2800,
     fallback: fallbackPlan,
     normalize: normalizePlan,
     warnings,
@@ -1538,7 +1545,7 @@ export async function executeGenerationPipeline(
     stageName: "screen stage",
     systemPrompt: screenPrompt.systemPrompt,
     prompt: screenPrompt.prompt,
-    maxTokens: 4200,
+    maxTokens: 4800,
     fallback: screenFallback,
     normalize: normalizeScreenSpecs,
     warnings,

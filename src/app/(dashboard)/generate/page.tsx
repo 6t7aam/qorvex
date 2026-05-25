@@ -280,317 +280,349 @@ function GeneratePageInner() {
 
   return (
     <>
-      <div className="w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8 xl:px-10">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-sm text-text-secondary transition hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Dashboard
-        </Link>
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(76,29,149,0.38)_0%,rgba(37,99,235,0.22)_42%,rgba(8,8,8,0.94)_100%)]" />
+        <div className="pointer-events-none absolute inset-y-0 left-[-12%] w-[42rem] rounded-full bg-violet-600/22 blur-[140px]" />
+        <div className="pointer-events-none absolute right-[8%] top-16 h-72 w-72 rounded-full bg-cyan-500/12 blur-[120px]" />
+        <div className="pointer-events-none absolute left-[28%] top-0 h-48 w-96 bg-[linear-gradient(90deg,rgba(124,58,237,0.35),rgba(6,182,212,0.22),transparent)] blur-[90px]" />
 
-        {/* Compact heading + credits strip */}
-        <div className="mt-3 flex flex-col gap-3 sm:mt-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white sm:text-3xl">
-              What do you want to build?
-            </h1>
-            <p className="mt-1 text-sm text-text-secondary">
-              Describe your app — the more detail, the better.
-            </p>
-          </div>
-          {user ? (
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-                <span className="font-semibold text-white">
-                  {usage
-                    ? usage.totalAvailableCredits.toLocaleString()
-                    : "…"}
-                </span>
-                <span className="text-text-muted">credits</span>
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 text-cyan-200">
-                Cost {INITIAL_APP_GENERATION_COST.toLocaleString()}
-                <span className="text-cyan-200/60">
-                  · ~${initialGenerationCostUsd.toFixed(2)}
-                </span>
-              </span>
-              {usage &&
-              usage.totalAvailableCredits < INITIAL_APP_GENERATION_COST ? (
-                <span className="inline-flex items-center rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-amber-200">
-                  Not enough credits
-                </span>
-              ) : null}
+        <div className="relative z-10 w-full px-4 py-4 sm:px-6 sm:py-6 lg:px-8 xl:px-10">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-sm text-text-secondary transition hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Dashboard
+          </Link>
+
+          <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+            <div>
+              <div className="inline-flex items-center rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-200">
+                Qorvex App Studio
+              </div>
+              <h1 className="mt-4 max-w-3xl text-3xl font-bold text-white sm:text-4xl xl:text-[3.15rem] xl:leading-[1.02]">
+                What do you want to build?
+              </h1>
+              <p className="mt-3 max-w-2xl text-base leading-relaxed text-text-secondary sm:text-lg">
+                Describe the product, key screens, and vibe. Qorvex will push
+                the generator toward a sharper, more app-specific result.
+              </p>
             </div>
-          ) : null}
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="mt-5 grid items-start gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(360px,0.9fr)]"
-        >
-          {/* LEFT COLUMN — prompt + arrow send + chips + tips + error */}
-          <div className="flex flex-col gap-3.5">
-            <div className="group relative rounded-2xl p-[1.5px] transition-all focus-within:[background:linear-gradient(135deg,#7c3aed,#a855f7,#06b6d4,#7c3aed)] focus-within:[background-size:300%_300%] focus-within:animate-gradient-shift">
-              <div className="rounded-2xl bg-background-secondary/60 backdrop-blur">
-                <textarea
-                  value={currentPrompt}
-                  disabled={isGenerating}
-                  onChange={(e) => setPrompt(e.target.value.slice(0, 3000))}
-                  onKeyDown={handlePromptKeyDown}
-                  placeholder="Describe your app idea… e.g. 'A fitness tracker app where users can log workouts, track calories, view progress charts, and connect with friends for challenges'"
-                  rows={4}
-                  className="block w-full resize-none rounded-2xl bg-transparent px-5 py-4 pr-16 text-base leading-relaxed text-white placeholder:text-text-muted/60 focus:outline-none disabled:opacity-60"
-                  style={{ minHeight: 144 }}
-                />
-                <div className="flex items-center justify-between gap-3 border-t border-white/5 px-4 py-2.5">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${charFeedback.color} ${charFeedback.textColor}`}
-                  >
-                    <Wand2 className="h-3 w-3" />
-                    {charFeedback.label}
-                  </span>
-                  <span className="text-xs text-text-muted">
-                    {currentPrompt.length}/3000
-                  </span>
+            {user ? (
+              <div className="grid gap-2 sm:grid-cols-3 xl:min-w-[540px]">
+                <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 backdrop-blur-xl">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
+                    Available
+                  </div>
+                  <div className="mt-1 text-lg font-semibold text-white">
+                    {usage ? usage.totalAvailableCredits.toLocaleString() : "…"}
+                  </div>
+                  <div className="text-xs text-text-secondary">AI credits</div>
+                </div>
+                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 backdrop-blur-xl">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-100/70">
+                    Cost
+                  </div>
+                  <div className="mt-1 text-lg font-semibold text-white">
+                    {INITIAL_APP_GENERATION_COST.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-cyan-100/75">
+                    ~${initialGenerationCostUsd.toFixed(2)}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-violet-400/20 bg-violet-500/10 px-4 py-3 backdrop-blur-xl">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-100/70">
+                    Daily usage
+                  </div>
+                  <div className="mt-1 text-lg font-semibold text-white">
+                    {planLimit < 0
+                      ? "Max"
+                      : `${used.toLocaleString()}/${planLimit.toLocaleString()}`}
+                  </div>
+                  <div className="text-xs text-violet-100/75">
+                    {limitCheck.allowed ? `Resets in ${resetCountdown}` : "Refill needed"}
+                  </div>
                 </div>
               </div>
-              {limitCheck.allowed ? (
-                <button
-                  type="submit"
-                  disabled={!canSubmit}
-                  aria-label="Generate app"
-                  title={
-                    !currentPrompt.trim()
-                      ? "Describe your app first"
-                      : "Generate app (Enter)"
-                  }
-                  className="absolute bottom-12 right-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-lg shadow-violet-900/30 transition hover:from-violet-400 hover:to-violet-500 disabled:cursor-not-allowed disabled:from-white/10 disabled:to-white/5 disabled:text-text-muted disabled:shadow-none"
-                >
-                  {isGenerating ? (
-                    <Sparkles className="h-5 w-5 animate-pulse" />
-                  ) : (
-                    <ArrowUp className="h-5 w-5" />
-                  )}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setUpgradeModal(true)}
-                  aria-label="Upgrade required"
-                  title="You need at least 2,000 AI credits to generate an app."
-                  className="absolute bottom-12 right-3 flex h-11 items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/15 px-3 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/25"
-                >
-                  Upgrade
-                </button>
-              )}
-            </div>
-
-            {isLargeGenerationRequest ? (
-              <div className="rounded-xl border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-100">
-                Generating a larger app may take longer. Qorvex optimizes the
-                project architecture in stages.
-              </div>
             ) : null}
-
-            {!currentPrompt && (
-              <div className="flex flex-wrap gap-2">
-                {EXAMPLE_PROMPTS.map((ex) => (
-                  <button
-                    key={ex}
-                    type="button"
-                    onClick={() => setPrompt(ex)}
-                    className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-text-secondary transition-all hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
-                  >
-                    {ex}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {error && (
-              <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span className="leading-snug">{error}</span>
-              </div>
-            )}
-
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
-              <button
-                type="button"
-                onClick={() => setTipsOpen((v) => !v)}
-                className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-white/[0.03]"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                  Tips for better results
-                </span>
-                {tipsOpen ? (
-                  <ChevronUp className="h-3.5 w-3.5 text-text-muted" />
-                ) : (
-                  <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
-                )}
-              </button>
-              {tipsOpen && (
-                <ul className="space-y-1.5 border-t border-white/5 px-4 py-3 text-xs text-text-secondary">
-                  {TIPS.map((tip) => (
-                    <li key={tip} className="flex items-start gap-2">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" />
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <p className="text-[11px] text-text-muted">
-              {planLimit < 0
-                ? "Daily AI credits are optimized for the Max plan."
-                : `${used.toLocaleString()}/${planLimit.toLocaleString()} daily credits used${
-                    Number.isFinite(totalAvailableCredits) &&
-                    totalAvailableCredits > 0 &&
-                    limitCheck.allowed
-                      ? ` · ${totalAvailableCredits.toLocaleString()} total available · resets in ${resetCountdown}`
-                      : ""
-                  }`}
-            </p>
           </div>
 
-          {/* RIGHT COLUMN — options stacked */}
-          <div className="flex flex-col gap-3.5">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                Template
-              </label>
-              <div className="mt-2 flex flex-wrap gap-2">
+          <form
+            onSubmit={handleSubmit}
+            className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1.06fr)_minmax(460px,0.94fr)]"
+          >
+            <div className="flex flex-col gap-5">
+              <div className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-black/25 shadow-[0_30px_90px_rgba(36,8,70,0.45)] backdrop-blur-2xl">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(168,85,247,0.8),rgba(34,211,238,0.7),transparent)]" />
+                <div className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full bg-violet-500/12 blur-[100px]" />
+                <div className="rounded-[28px] bg-background-secondary/55 backdrop-blur">
+                  <textarea
+                    value={currentPrompt}
+                    disabled={isGenerating}
+                    onChange={(e) => setPrompt(e.target.value.slice(0, 3000))}
+                    onKeyDown={handlePromptKeyDown}
+                    placeholder="Describe your app idea… e.g. 'A fitness tracker app where users can log workouts, track calories, view progress charts, and connect with friends for challenges'"
+                    rows={6}
+                    className="block w-full resize-none rounded-[28px] bg-transparent px-6 py-5 pr-20 text-[17px] leading-8 text-white placeholder:text-text-muted/60 focus:outline-none disabled:opacity-60 sm:text-lg"
+                    style={{ minHeight: 220 }}
+                  />
+                  <div className="flex items-center justify-between gap-3 border-t border-white/5 px-5 py-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${charFeedback.color} ${charFeedback.textColor}`}
+                    >
+                      <Wand2 className="h-3 w-3" />
+                      {charFeedback.label}
+                    </span>
+                    <span className="text-xs text-text-muted">
+                      {currentPrompt.length}/3000
+                    </span>
+                  </div>
+                </div>
+                {limitCheck.allowed ? (
+                  <button
+                    type="submit"
+                    disabled={!canSubmit}
+                    aria-label="Generate app"
+                    title={
+                      !currentPrompt.trim()
+                        ? "Describe your app first"
+                        : "Generate app (Enter)"
+                    }
+                    className="absolute bottom-[4.35rem] right-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 via-violet-500 to-cyan-500 text-white shadow-[0_12px_32px_rgba(124,58,237,0.45)] transition hover:scale-[1.03] hover:from-violet-400 hover:to-cyan-400 disabled:cursor-not-allowed disabled:from-white/10 disabled:via-white/10 disabled:to-white/5 disabled:text-text-muted disabled:shadow-none"
+                  >
+                    {isGenerating ? (
+                      <Sparkles className="h-5 w-5 animate-pulse" />
+                    ) : (
+                      <ArrowUp className="h-5 w-5" />
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setUpgradeModal(true)}
+                    aria-label="Upgrade required"
+                    title="You need at least 2,000 AI credits to generate an app."
+                    className="absolute bottom-[4.35rem] right-4 flex h-12 items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/15 px-3.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/25"
+                  >
+                    Upgrade
+                  </button>
+                )}
+              </div>
+
+              {isLargeGenerationRequest ? (
+                <div className="rounded-2xl border border-violet-400/20 bg-violet-500/10 px-4 py-3 text-sm text-violet-100 shadow-[0_10px_30px_rgba(76,29,149,0.18)]">
+                  Generating a larger app may take longer. Qorvex plans the
+                  architecture in stages so the output stays coherent.
+                </div>
+              ) : null}
+
+              {!currentPrompt && (
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                  {EXAMPLE_PROMPTS.map((ex) => (
+                    <button
+                      key={ex}
+                      type="button"
+                      onClick={() => setPrompt(ex)}
+                      className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-left text-sm text-text-secondary transition-all hover:border-violet-400/30 hover:bg-white/[0.06] hover:text-white"
+                    >
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-start gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span className="leading-snug">{error}</span>
+                </div>
+              )}
+
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl">
                 <button
                   type="button"
-                  onClick={() => setTemplateId(null)}
-                  className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                    templateId === null
-                      ? "border-violet-500 bg-violet-600 text-white shadow shadow-violet-500/20"
-                      : "border-white/10 bg-white/[0.03] text-text-secondary hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-                  }`}
+                  onClick={() => setTipsOpen((v) => !v)}
+                  className="flex w-full items-center justify-between px-5 py-4 text-sm font-semibold text-white transition hover:bg-white/[0.03]"
                 >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Custom
+                  <span className="inline-flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-violet-400" />
+                    Tips for better results
                   </span>
+                  {tipsOpen ? (
+                    <ChevronUp className="h-4 w-4 text-text-muted" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-text-muted" />
+                  )}
                 </button>
-                {APP_TEMPLATES.map((tpl) => {
-                  const active = templateId === tpl.id;
-                  return (
+                {tipsOpen && (
+                  <ul className="grid gap-2 border-t border-white/5 px-5 py-4 text-sm text-text-secondary sm:grid-cols-2">
+                    {TIPS.map((tip) => (
+                      <li key={tip} className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <p className="px-1 text-xs text-text-muted">
+                {planLimit < 0
+                  ? "Daily AI credits are optimized for the Max plan."
+                  : `${used.toLocaleString()}/${planLimit.toLocaleString()} daily credits used${
+                      Number.isFinite(totalAvailableCredits) &&
+                      totalAvailableCredits > 0 &&
+                      limitCheck.allowed
+                        ? ` · ${totalAvailableCredits.toLocaleString()} total available · resets in ${resetCountdown}`
+                        : ""
+                    }`}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-5 xl:sticky xl:top-6">
+              <div className="rounded-[28px] border border-white/10 bg-black/25 p-5 shadow-[0_24px_70px_rgba(5,10,35,0.45)] backdrop-blur-2xl">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
+                    Template
+                  </label>
+                  <div className="mt-3 flex flex-wrap gap-2.5">
                     <button
-                      key={tpl.id}
                       type="button"
-                      onClick={() => setTemplateId(tpl.id)}
-                      className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                        active
+                      onClick={() => setTemplateId(null)}
+                      className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
+                        templateId === null
                           ? "border-violet-500 bg-violet-600 text-white shadow shadow-violet-500/20"
                           : "border-white/10 bg-white/[0.03] text-text-secondary hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
                       }`}
                     >
                       <span className="inline-flex items-center gap-1.5">
-                        <span className="text-sm">{tpl.icon}</span>
-                        {tpl.name}
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Custom
                       </span>
                     </button>
-                  );
-                })}
-              </div>
-            </div>
+                    {APP_TEMPLATES.map((tpl) => {
+                      const active = templateId === tpl.id;
+                      return (
+                        <button
+                          key={tpl.id}
+                          type="button"
+                          onClick={() => setTemplateId(tpl.id)}
+                          className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
+                            active
+                              ? "border-violet-500 bg-violet-600 text-white shadow shadow-violet-500/20"
+                              : "border-white/10 bg-white/[0.03] text-text-secondary hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                          }`}
+                        >
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="text-sm">{tpl.icon}</span>
+                            {tpl.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                Color theme
-              </label>
-              <div className="mt-2 flex flex-wrap gap-2.5">
-                {COLORS.map((c) => {
-                  const active = primary === c.value;
-                  return (
-                    <button
-                      key={c.value}
-                      type="button"
-                      onClick={() => setPrimary(c.value)}
-                      aria-label={c.name}
-                      title={c.name}
-                      className={`relative rounded-lg transition-all duration-200 ${
-                        active
-                          ? "ring-2 ring-white ring-offset-2 ring-offset-background-primary"
-                          : "hover:scale-110"
-                      }`}
-                      style={{ width: 32, height: 32, backgroundColor: c.value }}
-                    >
-                      {active && (
-                        <Check className="absolute inset-0 m-auto h-3.5 w-3.5 text-white drop-shadow" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                <div className="mt-6">
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
+                    Color theme
+                  </label>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    {COLORS.map((c) => {
+                      const active = primary === c.value;
+                      return (
+                        <button
+                          key={c.value}
+                          type="button"
+                          onClick={() => setPrimary(c.value)}
+                          aria-label={c.name}
+                          title={c.name}
+                          className={`relative rounded-2xl transition-all duration-200 ${
+                            active
+                              ? "scale-105 ring-2 ring-white ring-offset-2 ring-offset-background-primary"
+                              : "hover:scale-110"
+                          }`}
+                          style={{ width: 34, height: 34, backgroundColor: c.value }}
+                        >
+                          {active && (
+                            <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                Key features
-              </label>
-              <div className="mt-2 grid grid-cols-2 gap-1.5">
-                {FEATURE_OPTIONS.map((feature) => {
-                  const active = features.includes(feature);
-                  return (
-                    <label
-                      key={feature}
-                      className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition-all ${
-                        active
-                          ? "border-violet-500/30 bg-violet-500/10 text-white"
-                          : "border-white/10 bg-white/[0.02] text-text-secondary hover:border-white/20 hover:bg-white/[0.04]"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={() => toggleFeature(feature)}
-                        className="sr-only"
-                      />
-                      <span
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded transition-all ${
-                          active
-                            ? "bg-gradient-to-br from-violet-500 to-violet-600 text-white"
-                            : "border border-white/20 bg-transparent"
+                <div className="mt-6 rounded-2xl border border-violet-400/15 bg-violet-500/8 px-4 py-3 text-sm text-violet-100/85">
+                  Qorvex now pushes the generator toward more app-specific
+                  flows, richer screen content, and less generic layouts.
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-black/25 p-5 shadow-[0_24px_70px_rgba(5,10,35,0.45)] backdrop-blur-2xl">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
+                    Key features
+                  </label>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {FEATURE_OPTIONS.map((feature) => {
+                      const active = features.includes(feature);
+                      return (
+                        <label
+                          key={feature}
+                          className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm transition-all ${
+                            active
+                              ? "border-violet-500/30 bg-violet-500/10 text-white"
+                              : "border-white/10 bg-white/[0.02] text-text-secondary hover:border-white/20 hover:bg-white/[0.04]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={active}
+                            onChange={() => toggleFeature(feature)}
+                            className="sr-only"
+                          />
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition-all ${
+                              active
+                                ? "bg-gradient-to-br from-violet-500 to-violet-600 text-white"
+                                : "border border-white/20 bg-transparent"
+                            }`}
+                          >
+                            {active && <Check className="h-3 w-3" />}
+                          </span>
+                          <span className="truncate">{feature}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
+                    Platform
+                  </label>
+                  <div className="mt-3 inline-flex rounded-2xl border border-white/10 bg-white/[0.03] p-1.5">
+                    {PLATFORMS.map((p) => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        onClick={() => setPlatform(p.value)}
+                        className={`rounded-xl px-5 py-2 text-sm font-medium transition-all ${
+                          platform === p.value
+                            ? "bg-violet-600 text-white shadow"
+                            : "text-text-secondary hover:text-white"
                         }`}
                       >
-                        {active && <Check className="h-2.5 w-2.5" />}
-                      </span>
-                      <span className="truncate">{feature}</span>
-                    </label>
-                  );
-                })}
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                Platform
-              </label>
-              <div className="mt-2 inline-flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
-                {PLATFORMS.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setPlatform(p.value)}
-                    className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-all ${
-                      platform === p.value
-                        ? "bg-violet-600 text-white shadow"
-                        : "text-text-secondary hover:text-white"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
       <UpgradeModal />
     </>
