@@ -14,10 +14,12 @@ import {
   Shield,
   Sparkles,
   X,
+  Zap,
 } from "lucide-react";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 import { Logo } from "@/components/brand/Logo";
 import { withTimeout } from "@/lib/with-timeout";
+import type { DailyCreditSnapshot } from "@/lib/ai-credits";
 import type { UserProfile } from "@/types";
 
 function clearSupabaseBrowserState() {
@@ -70,6 +72,7 @@ const PLAN_BADGE: Record<
 interface SidebarProps {
   profile: UserProfile | null;
   fallbackEmail?: string | null;
+  initialUsage?: DailyCreditSnapshot | null;
 }
 
 function initialsFromName(profile: UserProfile | null, fallback?: string | null) {
@@ -80,11 +83,13 @@ function initialsFromName(profile: UserProfile | null, fallback?: string | null)
   return (head + tail).toUpperCase();
 }
 
-export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
+export function Sidebar({ profile, fallbackEmail, initialUsage = null }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const { usage, resetCountdown } = useDailyUsage();
+  const { usage, isLoading, error, resetCountdown } = useDailyUsage({
+    initialUsage,
+  });
 
   const plan = profile?.plan ?? "free";
   const badge = PLAN_BADGE[plan];
@@ -96,7 +101,6 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
     profile?.email ||
     fallbackEmail ||
     "Account";
-  const usageLoaded = Boolean(usage);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -116,8 +120,8 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
       if (!response.ok || !body?.success) {
         throw new Error(body?.error ?? "Failed to sign out");
       }
-    } catch (error) {
-      console.error("Sign out error:", error);
+    } catch (signOutError) {
+      console.error("Sign out error:", signOutError);
     } finally {
       clearSupabaseBrowserState();
       setSigningOut(false);
@@ -130,18 +134,29 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
     return pathname.startsWith(href);
   }
 
+  const limit = usage?.limitCredits ?? 0;
+  const used = usage?.usedCredits ?? 0;
+  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const barColor =
+    pct >= 92
+      ? "from-rose-500 to-red-500"
+      : pct >= 70
+      ? "from-amber-400 to-orange-400"
+      : "from-violet-400 to-cyan-400";
+
   const sidebarBody = (
     <div className="relative flex h-full flex-col gap-6 p-5">
-      <div className="pointer-events-none absolute inset-x-4 top-2 h-32 rounded-full bg-violet-500/12 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-28 left-10 h-32 w-32 rounded-full bg-cyan-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute inset-x-4 top-2 h-32 rounded-full bg-violet-500/12 blur-3xl animate-pulse-slow" />
+      <div className="pointer-events-none absolute bottom-28 left-10 h-32 w-32 rounded-full bg-cyan-500/10 blur-3xl animate-pulse-slow [animation-delay:1s]" />
 
       <div className="relative rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_24px_80px_rgba(25,8,48,0.45)] backdrop-blur-2xl">
-        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(168,85,247,0.8),rgba(34,211,238,0.65),transparent)]" />
+        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(168,85,247,0.8),rgba(34,211,238,0.65),transparent)] animate-shimmer-x" />
         <Logo
           href="/dashboard"
           size="md"
           priority
-          className="text-lg font-bold tracking-tight"
+          className="group text-lg font-bold tracking-tight transition-transform duration-300 hover:scale-[1.02]"
+          iconClassName="transition-transform duration-500 group-hover:rotate-[14deg]"
           onClick={() => setMobileOpen(false)}
         />
         <div className="mt-4 rounded-2xl border border-violet-400/15 bg-violet-500/10 px-3 py-2.5">
@@ -163,18 +178,25 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className={`group relative mb-1 flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm transition ${
+              className={`group relative mb-1 flex items-center gap-3 overflow-hidden rounded-2xl px-3.5 py-3 text-sm transition-all duration-300 ${
                 active
                   ? "bg-[linear-gradient(135deg,rgba(124,58,237,0.3),rgba(14,165,233,0.16))] text-white ring-1 ring-violet-400/30 shadow-[0_12px_30px_rgba(76,29,149,0.28)]"
-                  : "text-text-secondary hover:bg-white/[0.04] hover:text-white"
+                  : "text-text-secondary hover:translate-x-0.5 hover:bg-white/[0.04] hover:text-white"
               }`}
             >
               {active && (
-                <span className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-violet-300 to-cyan-300" />
+                <span className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-violet-300 to-cyan-300 shadow-[0_0_12px_rgba(168,85,247,0.7)]" />
               )}
+              <span
+                className={`pointer-events-none absolute inset-y-0 left-[-30%] w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent transition-transform duration-700 ${
+                  active ? "" : "group-hover:translate-x-[260%]"
+                }`}
+              />
               <Icon
-                className={`h-4 w-4 transition ${
-                  active ? "text-violet-200" : "text-text-muted group-hover:text-white"
+                className={`h-4 w-4 transition-transform duration-300 ${
+                  active
+                    ? "text-violet-200"
+                    : "text-text-muted group-hover:scale-110 group-hover:text-white"
                 }`}
               />
               <span className="font-medium">{item.label}</span>
@@ -199,40 +221,60 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
       </nav>
 
       <div className="mt-auto space-y-3">
-        <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_20px_60px_rgba(8,12,28,0.35)] backdrop-blur-2xl">
-          {usage && (
+        <div className="relative rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_20px_60px_rgba(8,12,28,0.35)] backdrop-blur-2xl">
           <Link
             href="/billing"
-            className="block rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3.5 transition hover:bg-white/[0.05]"
+            className="group block overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3.5 transition-all duration-300 hover:border-violet-400/30 hover:bg-white/[0.06]"
           >
-            <div className="text-[10px] uppercase tracking-wider text-text-muted">
-              Available AI Credits
-            </div>
-            <div className="mt-1 text-base font-semibold text-white">
-              {usage.totalAvailableCredits.toLocaleString()} available
-            </div>
-            <div className="mt-1 text-[11px] text-text-secondary">
-              {usage.dailyRemainingCredits.toLocaleString()} daily +{" "}
-              {usage.bonusCredits.toLocaleString()} bonus
-            </div>
-            <div className="mt-1 text-[11px] text-text-secondary">
-              ${usage.estimatedCostUsd.toFixed(3)} used today • resets in {resetCountdown}
-            </div>
-          </Link>
-          )}
-          {!usageLoaded && (
-            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3.5">
+            <div className="flex items-center justify-between">
               <div className="text-[10px] uppercase tracking-wider text-text-muted">
-                Available AI Credits
+                AI Credits
               </div>
-              <div className="mt-1 text-sm text-text-secondary">
-                Loading usage…
-              </div>
+              <Zap className="h-3.5 w-3.5 text-violet-300/80 transition-transform duration-500 group-hover:rotate-12 group-hover:text-violet-200" />
             </div>
-          )}
+
+            {usage ? (
+              <>
+                <div className="mt-1 text-base font-semibold text-white tabular-nums">
+                  {usage.totalAvailableCredits.toLocaleString()}{" "}
+                  <span className="text-[11px] font-normal text-text-secondary">
+                    / {usage.limitCredits.toLocaleString()}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div
+                    className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-700 shadow-[0_0_12px_rgba(168,85,247,0.45)]`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 text-[11px] text-text-secondary tabular-nums">
+                  <span>{used.toLocaleString()} used today</span>
+                  <span className="text-text-muted">•</span>
+                  <span>resets in {resetCountdown}</span>
+                </div>
+                <div className="mt-1 text-[11px] text-text-muted">
+                  {usage.dailyRemainingCredits.toLocaleString()} daily +{" "}
+                  {usage.bonusCredits.toLocaleString()} bonus
+                </div>
+              </>
+            ) : isLoading ? (
+              <>
+                <div className="mt-2 h-5 w-2/3 animate-pulse rounded-md bg-white/[0.06]" />
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-full w-1/3 animate-shimmer-x rounded-full bg-gradient-to-r from-transparent via-violet-400/60 to-transparent bg-[length:200%_100%]" />
+                </div>
+                <div className="mt-3 h-3 w-1/2 animate-pulse rounded-md bg-white/[0.04]" />
+              </>
+            ) : (
+              <div className="mt-2 text-[11px] text-amber-300/80">
+                {error ?? "Usage unavailable right now."}
+              </div>
+            )}
+          </Link>
 
           <div className="mt-4 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 text-xs font-semibold text-white shadow-[0_10px_26px_rgba(76,29,149,0.35)]">
+            <div className="group relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 text-xs font-semibold text-white shadow-[0_10px_26px_rgba(76,29,149,0.35)] transition-transform duration-300 hover:scale-[1.04]">
+              <span className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/30 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               {initialsFromName(profile, fallbackEmail)}
             </div>
             <div className="min-w-0 flex-1">
@@ -250,9 +292,13 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
           {plan === "free" && (
             <Link
               href="/billing"
-              className="gradient-bg mt-4 block rounded-2xl px-3 py-2.5 text-center text-xs font-semibold text-white transition hover:opacity-90"
+              className="group relative mt-4 block overflow-hidden rounded-2xl px-3 py-2.5 text-center text-xs font-semibold text-white transition-all duration-300 hover:shadow-[0_12px_30px_rgba(124,58,237,0.5)]"
             >
-              Upgrade
+              <span className="absolute inset-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 bg-[length:200%_100%] animate-gradient-shift" />
+              <span className="relative inline-flex items-center justify-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 transition-transform duration-500 group-hover:rotate-180" />
+                Upgrade
+              </span>
             </Link>
           )}
 
@@ -294,10 +340,10 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 animate-fade-in bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-72 max-w-[80vw] border-r border-white/10 bg-background-primary/95 backdrop-blur-2xl">
+          <div className="absolute left-0 top-0 h-full w-72 max-w-[80vw] animate-slide-in-left border-r border-white/10 bg-background-primary/95 backdrop-blur-2xl">
             <button
               type="button"
               onClick={() => setMobileOpen(false)}

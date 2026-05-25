@@ -31,8 +31,17 @@ const COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-background-primary text-text-secondary">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <footer className="relative overflow-hidden border-t border-white/5 bg-background-primary text-text-secondary">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-12 mx-auto h-24 w-1/2 bg-[linear-gradient(90deg,transparent,rgba(124,58,237,0.25),rgba(34,211,238,0.18),transparent)] blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(168,85,247,0.5),rgba(34,211,238,0.45),transparent)]"
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-4">
           <div className="space-y-3">
             <Logo href="/" size="md" />
@@ -51,7 +60,7 @@ export function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-text-secondary transition hover:text-white"
+                      className="link-underline text-sm text-text-secondary transition hover:text-white"
                     >
                       {link.label}
                     </Link>
@@ -72,27 +81,30 @@ export function Footer() {
               target="_blank"
               rel="noreferrer noopener"
               aria-label="Qorvex on X"
-              className="rounded-md p-1.5 transition hover:bg-white/5 hover:text-white"
+              className="group relative rounded-md p-1.5 transition hover:bg-white/5 hover:text-white"
             >
-              <XIcon className="h-4 w-4" />
+              <span className="absolute inset-0 rounded-md bg-violet-500/0 transition-all duration-300 group-hover:bg-violet-500/15" />
+              <XIcon className="relative h-4 w-4" />
             </a>
             <a
               href="https://github.com"
               target="_blank"
               rel="noreferrer noopener"
               aria-label="Qorvex on GitHub"
-              className="rounded-md p-1.5 transition hover:bg-white/5 hover:text-white"
+              className="group relative rounded-md p-1.5 transition hover:bg-white/5 hover:text-white"
             >
-              <GithubIcon className="h-4 w-4" />
+              <span className="absolute inset-0 rounded-md bg-cyan-500/0 transition-all duration-300 group-hover:bg-cyan-500/15" />
+              <GithubIcon className="relative h-4 w-4" />
             </a>
             <a
               href="https://linkedin.com"
               target="_blank"
               rel="noreferrer noopener"
               aria-label="Qorvex on LinkedIn"
-              className="rounded-md p-1.5 transition hover:bg-white/5 hover:text-white"
+              className="group relative rounded-md p-1.5 transition hover:bg-white/5 hover:text-white"
             >
-              <LinkedinIcon className="h-4 w-4" />
+              <span className="absolute inset-0 rounded-md bg-violet-500/0 transition-all duration-300 group-hover:bg-violet-500/15" />
+              <LinkedinIcon className="relative h-4 w-4" />
             </a>
           </div>
         </div>

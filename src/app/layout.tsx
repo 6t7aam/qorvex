@@ -62,10 +62,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg?v=4", type: "image/svg+xml", sizes: "any" },
+      { url: "/icon.svg?v=4", type: "image/svg+xml", sizes: "any" },
     ],
-    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+    shortcut: [{ url: "/favicon.svg?v=4", type: "image/svg+xml" }],
+    apple: [
+      { url: "/apple-icon?v=4", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 

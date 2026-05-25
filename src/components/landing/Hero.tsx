@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { Play, Sparkles, Star } from "lucide-react";
 
 const AVATARS = [
@@ -16,6 +17,8 @@ const FAKE_APP_SCREENS = [
   { tilt: -8, translateY: 0, accent: "#7c3aed" },
   { tilt: 6, translateY: 32, accent: "#06b6d4" },
 ];
+
+const ROTATING_WORDS = ["mobile apps", "MVPs", "marketplaces", "prototypes", "side projects"];
 
 const containerVariants: Variants = {
   hidden: {},
@@ -32,25 +35,62 @@ const itemVariants: Variants = {
 };
 
 export function Hero() {
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const [wordIndex, setWordIndex] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
+  const orbitDelays = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => i * 0.6),
+    [],
+  );
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % ROTATING_WORDS.length);
+    }, 2600);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const el = heroRef.current;
+    if (!el) return;
+
+    function onMove(event: PointerEvent) {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+      el.style.setProperty("--mx", `${x}%`);
+      el.style.setProperty("--my", `${y}%`);
+    }
+
+    el.addEventListener("pointermove", onMove);
+    return () => el.removeEventListener("pointermove", onMove);
+  }, [prefersReducedMotion]);
+
   return (
-    <section className="relative isolate flex min-h-[calc(100vh-4rem)] items-center overflow-hidden">
+    <section
+      ref={heroRef}
+      className="relative isolate flex min-h-[calc(100vh-4rem)] items-center overflow-hidden"
+      style={{ "--mx": "50%", "--my": "30%" } as React.CSSProperties}
+    >
+      <div aria-hidden className="pointer-events-none absolute inset-0 grid-bg" />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.18]"
+        className="pointer-events-none absolute inset-0 transition-[background] duration-500"
         style={{
-          backgroundImage:
-            "radial-gradient(rgba(255,255,255,0.18) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
+          background:
+            "radial-gradient(600px circle at var(--mx) var(--my), rgba(124,58,237,0.16), transparent 65%)",
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-32 h-[480px] w-[480px] rounded-full opacity-50 blur-3xl"
+        className="pointer-events-none absolute -top-32 -left-32 h-[480px] w-[480px] rounded-full opacity-50 blur-3xl animate-pulse-slow"
         style={{ background: "radial-gradient(circle, #7c3aed 0%, transparent 70%)" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 -right-24 h-[520px] w-[520px] rounded-full opacity-40 blur-3xl"
+        className="pointer-events-none absolute -bottom-32 -right-24 h-[520px] w-[520px] rounded-full opacity-40 blur-3xl animate-pulse-slow [animation-delay:2s]"
         style={{ background: "radial-gradient(circle, #06b6d4 0%, transparent 70%)" }}
       />
       <div
@@ -61,6 +101,23 @@ export function Hero() {
             "radial-gradient(ellipse at center, rgba(8,8,8,0) 0%, #080808 80%)",
         }}
       />
+
+      {/* Floating glyphs */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden lg:block">
+        {orbitDelays.map((delay, i) => (
+          <span
+            key={i}
+            className="absolute h-1.5 w-1.5 rounded-full bg-gradient-to-br from-violet-400 to-cyan-400 animate-float-slow"
+            style={{
+              top: `${10 + ((i * 71) % 80)}%`,
+              left: `${5 + ((i * 53) % 90)}%`,
+              opacity: 0.35,
+              animationDelay: `${delay}s`,
+              filter: "blur(0.3px)",
+            }}
+          />
+        ))}
+      </div>
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <motion.div
@@ -73,11 +130,15 @@ export function Hero() {
             <div className="relative inline-flex items-center gap-2 rounded-full p-[1px]">
               <div
                 aria-hidden
-                className="absolute inset-0 rounded-full opacity-80 [background:linear-gradient(120deg,#7c3aed,#06b6d4,#7c3aed)] [background-size:200%_200%] animate-gradient-shift"
+                className="absolute inset-0 rounded-full opacity-90 [background:linear-gradient(120deg,#7c3aed,#06b6d4,#7c3aed)] [background-size:200%_200%] animate-gradient-shift"
               />
               <span className="relative inline-flex items-center gap-2 rounded-full bg-background-primary px-4 py-1.5 text-xs font-medium text-text-secondary">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
+                </span>
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                Powered by Claude AI
+                Powered by Gemini AI
               </span>
             </div>
           </motion.div>
@@ -88,7 +149,22 @@ export function Hero() {
           >
             Turn ideas into
             <br />
-            <span className="gradient-text">mobile apps</span>
+            <span className="relative inline-block min-h-[1.1em]">
+              <motion.span
+                key={ROTATING_WORDS[wordIndex]}
+                initial={{ y: 18, opacity: 0, filter: "blur(8px)" }}
+                animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+                exit={{ y: -18, opacity: 0, filter: "blur(8px)" }}
+                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                className="gradient-text inline-block"
+              >
+                {ROTATING_WORDS[wordIndex]}
+              </motion.span>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-2 -bottom-1 h-px bg-gradient-to-r from-transparent via-violet-400/60 to-transparent"
+              />
+            </span>
           </motion.h1>
 
           <motion.p
@@ -106,18 +182,25 @@ export function Hero() {
           >
             <Link
               href="/signup"
-              className="gradient-bg group inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-600/20 transition hover:scale-[1.02] hover:shadow-violet-600/40"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-600/20 transition-all duration-300 hover:scale-[1.03] hover:shadow-violet-600/50"
             >
-              Start building for free
-              <span className="transition-transform group-hover:translate-x-0.5">
-                →
+              <span className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 bg-[length:200%_100%] animate-gradient-shift" />
+              <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-[100%]" />
+              <span className="relative inline-flex items-center gap-2">
+                Start building for free
+                <span className="transition-transform group-hover:translate-x-1">
+                  →
+                </span>
               </span>
             </Link>
             <button
               type="button"
-              className="glass-border inline-flex items-center gap-2 rounded-xl bg-white/[0.02] px-6 py-3.5 text-base font-medium text-white transition hover:bg-white/[0.06]"
+              className="group glass-border relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-white/[0.02] px-6 py-3.5 text-base font-medium text-white transition hover:border-violet-400/40 hover:bg-white/[0.06]"
             >
-              <Play className="h-4 w-4" />
+              <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/15 ring-1 ring-violet-400/30">
+                <span className="absolute inset-0 rounded-full bg-violet-500/30 animate-ripple" />
+                <Play className="relative h-3 w-3 text-violet-200" />
+              </span>
               Watch demo
             </button>
           </motion.div>
@@ -131,7 +214,7 @@ export function Hero() {
                 {AVATARS.map((a) => (
                   <div
                     key={a.initials}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-background-primary text-[10px] font-semibold text-white"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-background-primary text-[10px] font-semibold text-white transition-transform duration-300 hover:scale-110 hover:z-10"
                     style={{ backgroundColor: a.color }}
                   >
                     {a.initials}
@@ -158,6 +241,10 @@ export function Hero() {
             variants={itemVariants}
             className="relative mt-20 flex items-end justify-center gap-6 sm:gap-10"
           >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-10 -bottom-12 h-40 rounded-[50%] bg-violet-500/25 blur-3xl"
+            />
             {FAKE_APP_SCREENS.map((screen, idx) => (
               <PhoneMockup key={idx} index={idx} {...screen} />
             ))}
@@ -180,13 +267,16 @@ function PhoneMockup({
   index: number;
 }) {
   return (
-    <div
-      className="relative animate-float"
-      style={{
-        transform: `translateY(${translateY}px) rotate(${tilt}deg)`,
-        animationDelay: `${index * 0.5}s`,
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 40, rotate: tilt * 1.4 }}
+      whileInView={{ opacity: 1, y: translateY, rotate: tilt }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.9, delay: index * 0.15, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: translateY - 8, rotate: tilt * 0.6, scale: 1.02 }}
+      className="relative animate-float-slow"
+      style={{ animationDelay: `${index * 0.5}s` }}
     >
+      <div className="absolute -inset-3 rounded-[40px] bg-gradient-to-br from-violet-500/30 via-transparent to-cyan-400/30 opacity-50 blur-2xl" />
       <div className="relative h-[420px] w-[210px] rounded-[34px] border border-white/10 bg-background-secondary p-2.5 shadow-2xl shadow-black/60">
         <div className="relative h-full w-full overflow-hidden rounded-[26px] bg-background-tertiary">
           <div
@@ -199,20 +289,24 @@ function PhoneMockup({
           <div className="absolute left-1/2 top-2 h-1.5 w-16 -translate-x-1/2 rounded-full bg-black/60" />
           <div className="relative space-y-3 px-3 pt-9">
             <div className="space-y-1">
-              <div className="h-2.5 w-20 rounded-full bg-white/30" />
-              <div className="h-1.5 w-12 rounded-full bg-white/15" />
+              <div className="h-2.5 w-20 animate-pulse rounded-full bg-white/30" />
+              <div className="h-1.5 w-12 animate-pulse rounded-full bg-white/15 [animation-delay:0.4s]" />
             </div>
             <div
-              className="h-24 rounded-2xl"
+              className="relative h-24 overflow-hidden rounded-2xl"
               style={{
                 background: `linear-gradient(135deg, ${accent} 0%, ${accent}66 100%)`,
               }}
-            />
+            >
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-x" />
+            </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="h-16 rounded-xl bg-white/[0.04]" />
-              <div className="h-16 rounded-xl bg-white/[0.04]" />
-              <div className="h-16 rounded-xl bg-white/[0.04]" />
-              <div className="h-16 rounded-xl bg-white/[0.04]" />
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-16 rounded-xl bg-white/[0.04] transition-all duration-300 hover:bg-white/[0.08]"
+                />
+              ))}
             </div>
             <div className="space-y-2">
               <div className="h-2 w-3/4 rounded-full bg-white/15" />
@@ -223,13 +317,13 @@ function PhoneMockup({
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-2 w-2 rounded-full"
+                className="h-2 w-2 rounded-full transition-all duration-300"
                 style={{ backgroundColor: i === 0 ? accent : "rgba(255,255,255,0.2)" }}
               />
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

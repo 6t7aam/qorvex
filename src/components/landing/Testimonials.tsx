@@ -1,6 +1,6 @@
 "use client";
 
-import { Star } from "lucide-react";
+import { Quote, Star } from "lucide-react";
 import { FadeIn } from "@/components/shared/FadeIn";
 
 interface Testimonial {
@@ -59,10 +59,18 @@ const TESTIMONIALS: Testimonial[] = [
 export function Testimonials() {
   return (
     <section id="testimonials" className="relative py-24 sm:py-32">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-32 -z-10 mx-auto h-64 w-1/2 rounded-full bg-violet-500/10 blur-[110px]"
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <FadeIn className="mx-auto max-w-2xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-text-secondary">
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+            Reviews
+          </div>
           <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Loved by builders worldwide
+            Loved by <span className="gradient-text">builders</span> worldwide
           </h2>
         </FadeIn>
 
@@ -80,12 +88,17 @@ export function Testimonials() {
 
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <div className="glass flex h-full flex-col rounded-2xl p-6">
+    <div className="card-surface card-hover sheen group relative flex h-full flex-col overflow-hidden rounded-2xl p-6">
+      <Quote
+        aria-hidden
+        className="absolute right-5 top-5 h-10 w-10 text-white/[0.04] transition-all duration-500 group-hover:scale-110 group-hover:text-white/[0.08]"
+      />
       <div className="flex gap-0.5">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star
             key={i}
-            className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
+            className="h-3.5 w-3.5 fill-amber-400 text-amber-400 transition-transform duration-500"
+            style={{ transitionDelay: `${i * 40}ms` }}
           />
         ))}
       </div>
@@ -94,8 +107,11 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
       </p>
       <div className="mt-6 flex items-center gap-3">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white"
-          style={{ backgroundColor: testimonial.color }}
+          className="relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white shadow-lg transition-transform duration-300 group-hover:scale-110"
+          style={{
+            backgroundColor: testimonial.color,
+            boxShadow: `0 8px 24px ${testimonial.color}55`,
+          }}
         >
           {testimonial.initials}
         </div>

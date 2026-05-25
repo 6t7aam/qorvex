@@ -83,6 +83,9 @@ export function ProjectCard({
     project.status === "ready" &&
     project.generated_code &&
     Object.keys(project.generated_code).length > 0;
+  const primaryHref = hasGeneratedCode
+    ? `/projects/${project.id}?tab=editor`
+    : `/projects/${project.id}`;
 
   function openDeleteDialog() {
     setMenuOpen(false);
@@ -126,15 +129,33 @@ export function ProjectCard({
   }
 
   return (
-    <div className="glass-border group relative flex h-full flex-col overflow-hidden rounded-2xl bg-background-secondary/40 transition hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-black/40">
-      <Link href={`/projects/${project.id}`} className="block">
+    <div className="card-surface card-hover sheen group relative flex h-full flex-col overflow-hidden rounded-2xl">
+      <Link
+        href={primaryHref}
+        aria-label={`Open ${project.name}`}
+        className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+      />
+
+      <div className="pointer-events-none">
         <div
-          className="relative flex h-32 items-center justify-center"
+          className="relative flex h-32 items-center justify-center overflow-hidden"
           style={{
             background: `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`,
           }}
         >
-          <div className="h-20 w-12 rounded-md border border-white/20 bg-black/40 shadow-inner shadow-black/40">
+          <span
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_50%)]"
+          />
+          <span
+            aria-hidden
+            className="absolute -inset-x-10 -bottom-10 h-20 bg-gradient-to-t from-black/40 to-transparent"
+          />
+          <span
+            aria-hidden
+            className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full"
+          />
+          <div className="relative h-20 w-12 rounded-md border border-white/20 bg-black/40 shadow-inner shadow-black/40 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-0.5">
             <div className="mx-auto mt-1 h-0.5 w-3 rounded-full bg-white/40" />
             <div className="mt-2 space-y-1 px-1">
               <div className="h-1 w-full rounded-full bg-white/30" />
@@ -147,14 +168,12 @@ export function ProjectCard({
             </div>
           </div>
         </div>
-      </Link>
+      </div>
 
-      <div className="flex flex-1 flex-col p-4">
-        <Link href={`/projects/${project.id}`}>
-          <h3 className="truncate text-base font-semibold text-white transition group-hover:text-violet-200">
-            {project.name}
-          </h3>
-        </Link>
+      <div className="pointer-events-none relative flex flex-1 flex-col p-4">
+        <h3 className="truncate text-base font-semibold text-white transition-colors duration-300 group-hover:text-gradient-soft">
+          {project.name}
+        </h3>
         <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
           {project.description ?? project.prompt}
         </p>
@@ -180,7 +199,7 @@ export function ProjectCard({
                 onPointerDown={(event) => {
                   event.stopPropagation();
                 }}
-                className="rounded-md p-1.5 text-text-muted transition hover:bg-white/[0.04] hover:text-white"
+                className="pointer-events-auto relative z-20 rounded-md p-1.5 text-text-muted transition hover:bg-white/[0.04] hover:text-white"
                 aria-label={`Open actions for ${project.name}`}
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -190,20 +209,20 @@ export function ProjectCard({
               align="end"
               onClick={(event) => event.stopPropagation()}
             >
-              <DropdownMenuItem asChild>
-                <Link href={`/projects/${project.id}`}>
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  Open
-                </Link>
-              </DropdownMenuItem>
               {hasGeneratedCode && (
                 <DropdownMenuItem asChild>
                   <Link href={`/projects/${project.id}?tab=editor`}>
                     <Code2 className="h-3.5 w-3.5" />
-                    Open in Editor
+                    Open Editor
                   </Link>
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem asChild>
+                <Link href={`/projects/${project.id}?tab=preview`}>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open Preview
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled>
                 <Pencil className="h-3.5 w-3.5" />

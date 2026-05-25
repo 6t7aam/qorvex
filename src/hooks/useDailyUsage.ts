@@ -2,9 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatResetCountdown, type DailyCreditSnapshot } from "@/lib/ai-credits";
-import { useAppStore } from "@/stores/useAppStore";
 
 export const USAGE_UPDATED_EVENT = "qorvex:usage-updated";
+
+interface UseDailyUsageOptions {
+  initialUsage?: DailyCreditSnapshot | null;
+  enabled?: boolean;
+}
 
 interface UseDailyUsageResult {
   usage: DailyCreditSnapshot | null;
@@ -13,10 +17,13 @@ interface UseDailyUsageResult {
   resetCountdown: string;
 }
 
-export function useDailyUsage(): UseDailyUsageResult {
-  const user = useAppStore((state) => state.user);
-  const [usage, setUsage] = useState<DailyCreditSnapshot | null>(null);
+export function useDailyUsage(
+  options: UseDailyUsageOptions = {},
+): UseDailyUsageResult {
+  const { initialUsage = null, enabled = true } = options;
+  const [usage, setUsage] = useState<DailyCreditSnapshot | null>(initialUsage);
   const [error, setError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(Boolean(initialUsage));
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -25,10 +32,7 @@ export function useDailyUsage(): UseDailyUsageResult {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-
+    if (!enabled) return;
     let cancelled = false;
 
     function loadUsage() {
@@ -45,6 +49,7 @@ export function useDailyUsage(): UseDailyUsageResult {
 
           if (!cancelled) {
             setUsage(payload?.usage ?? null);
+            setHasFetched(true);
           }
         })
         .catch((fetchError) => {
@@ -54,6 +59,7 @@ export function useDailyUsage(): UseDailyUsageResult {
                 ? fetchError.message
                 : "Could not load daily AI usage",
             );
+            setHasFetched(true);
           }
         });
     }
@@ -65,19 +71,19 @@ export function useDailyUsage(): UseDailyUsageResult {
       cancelled = true;
       window.removeEventListener(USAGE_UPDATED_EVENT, loadUsage);
     };
-  }, [user]);
+  }, [enabled]);
 
   const resetCountdown = useMemo(
     () => (usage ? formatResetCountdown(usage.resetAt, now) : "--"),
     [usage, now],
   );
 
-  const isLoading = Boolean(user && !usage && !error);
+  const isLoading = enabled && !hasFetched;
 
   return {
-    usage: user ? usage : null,
-    isLoading: user ? isLoading : false,
+    usage,
+    isLoading,
     error,
-    resetCountdown: user ? resetCountdown : "--",
+    resetCountdown,
   };
 }

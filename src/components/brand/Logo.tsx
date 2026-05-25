@@ -52,14 +52,20 @@ export function Logo({
   const styles = SIZE_STYLES[size];
   const content = (
     <>
-      <Image
-        src="/qorvex-logo.svg"
-        alt="Qorvex"
-        width={36}
-        height={36}
-        priority={priority}
-        className={`${styles.icon} ${styles.radius} object-contain ${iconClassName}`.trim()}
-      />
+      <span className="relative inline-flex shrink-0">
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500/40 to-cyan-400/40 opacity-60 blur-md ${styles.icon}`}
+        />
+        <Image
+          src="/qorvex-logo.svg?v=4"
+          alt="Qorvex"
+          width={36}
+          height={36}
+          priority={priority}
+          className={`relative ${styles.icon} ${styles.radius} object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.45)] ${iconClassName}`.trim()}
+        />
+      </span>
       {variant === "wordmark" ? (
         <span
           className={`gradient-text font-bold tracking-tight ${styles.text} ${textClassName}`.trim()}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, MessageCircle } from "lucide-react";
 import { FadeIn } from "@/components/shared/FadeIn";
 
 interface FaqEntry {
@@ -37,7 +37,7 @@ const FAQS: FaqEntry[] = [
   },
   {
     q: "What AI model powers Qorvex?",
-    a: "Qorvex uses Claude by Anthropic — one of the most capable AI models for code generation. This ensures high-quality, production-ready output.",
+    a: "Qorvex uses Google Gemini — a state-of-the-art AI model with strong coding abilities. This ensures high-quality, production-ready output.",
   },
   {
     q: "Is there a free trial?",
@@ -52,8 +52,12 @@ export function FAQ() {
     <section id="faq" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <FadeIn className="text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-text-secondary">
+            <MessageCircle className="h-3 w-3 text-violet-400" />
+            Questions
+          </div>
           <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Frequently asked questions
+            Frequently asked <span className="gradient-text">questions</span>
           </h2>
         </FadeIn>
 
@@ -62,7 +66,13 @@ export function FAQ() {
             const open = openIndex === idx;
             return (
               <FadeIn key={faq.q} delay={idx * 0.03}>
-                <div className="glass overflow-hidden rounded-2xl">
+                <div
+                  className={`card-surface group overflow-hidden rounded-2xl transition-all duration-300 ${
+                    open
+                      ? "border-violet-400/40 shadow-[0_18px_60px_rgba(124,58,237,0.18)]"
+                      : "hover:border-white/15"
+                  }`}
+                >
                   <button
                     type="button"
                     onClick={() => setOpenIndex(open ? null : idx)}
@@ -73,8 +83,10 @@ export function FAQ() {
                       {faq.q}
                     </span>
                     <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
-                        open ? "bg-violet-500/15 text-violet-300" : "bg-white/[0.04] text-text-secondary"
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                        open
+                          ? "rotate-180 bg-gradient-to-br from-violet-500/30 to-cyan-500/30 text-white ring-1 ring-violet-400/40"
+                          : "bg-white/[0.04] text-text-secondary group-hover:bg-white/[0.08]"
                       }`}
                     >
                       {open ? (
@@ -91,7 +103,10 @@ export function FAQ() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        transition={{
+                          duration: 0.35,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
                         className="overflow-hidden"
                       >
                         <p className="px-6 pb-5 text-sm leading-relaxed text-text-secondary">
