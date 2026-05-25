@@ -18,6 +18,7 @@ interface MobilePreviewProps {
   projectPrompt?: string;
   colors: { primary: string; secondary: string; accent: string };
   isUpdating?: boolean;
+  compact?: boolean;
 }
 
 type PreviewItem = Record<string, string | number>;
@@ -79,6 +80,7 @@ export function MobilePreview({
   projectPrompt,
   colors,
   isUpdating = false,
+  compact = false,
 }: MobilePreviewProps) {
   const device = useUIStore((state) => state.previewDevice);
   const setDevice = useUIStore((state) => state.setPreviewDevice);
@@ -116,8 +118,12 @@ export function MobilePreview({
   const tabs = getTabLabelsFromPreview(preview).slice(0, 5);
 
   return (
-    <div className="flex h-full flex-col items-center gap-6">
-      <div className="flex flex-col items-center gap-3">
+    <div
+      className={`flex h-full min-h-0 w-full flex-col items-center ${
+        compact ? "gap-3" : "gap-4 lg:gap-5"
+      }`}
+    >
+      <div className={`flex w-full flex-col items-center ${compact ? "gap-2" : "gap-3"}`}>
         <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.02] p-1">
           {(["ios", "android"] as const).map((platform) => (
             <button
@@ -136,13 +142,19 @@ export function MobilePreview({
         </div>
 
         {screens.length > 1 && (
-          <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
+          <div
+            className={`flex max-w-full items-center justify-center gap-2 ${
+              compact
+                ? "w-full overflow-x-auto whitespace-nowrap pb-1"
+                : "flex-wrap"
+            }`}
+          >
             {screens.map((screen, index) => (
               <button
                 key={getScreenKey(screen, index)}
                 type="button"
                 onClick={() => setScreenIndex(index)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition ${
                   index === safeScreenIndex
                     ? "bg-white/12 text-white"
                     : "bg-white/[0.03] text-text-secondary hover:text-white"
@@ -155,47 +167,53 @@ export function MobilePreview({
         )}
       </div>
 
-      <motion.div
-        key={`${device}-${activeScreen?.id ?? "preview"}`}
-        initial={{ rotateY: 90, opacity: 0 }}
-        animate={{ rotateY: 0, opacity: 1 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-        style={{ transformPerspective: 1200 }}
-      >
-        <PhoneFrame
-          device={device}
-          isUpdating={isUpdating || justUpdated}
-          background={preview.theme.background}
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center py-1">
+        <motion.div
+          key={`${device}-${activeScreen?.id ?? "preview"}`}
+          initial={{ rotateY: 90, opacity: 0 }}
+          animate={{ rotateY: 0, opacity: 1 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          style={{ transformPerspective: 1200 }}
+          className="flex h-full max-h-full items-center justify-center"
         >
-          {activeScreen ? (
-            <PreviewScreen
-              preview={preview}
-              screen={activeScreen}
-              tabs={tabs}
-              colors={colors}
-            />
-          ) : (
-            <EmptyPreview />
-          )}
-        </PhoneFrame>
-      </motion.div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="glass-border inline-flex items-center gap-2 rounded-xl bg-white/[0.02] px-4 py-2 text-sm text-white transition hover:bg-white/[0.06]"
-        >
-          <QrCode className="h-4 w-4" />
-          Expo Go soon
-        </button>
-        <button
-          type="button"
-          className="glass-border inline-flex items-center gap-2 rounded-xl bg-white/[0.02] px-4 py-2 text-sm text-white transition hover:bg-white/[0.06]"
-        >
-          <Maximize2 className="h-4 w-4" />
-          Full screen soon
-        </button>
+          <PhoneFrame
+            device={device}
+            isUpdating={isUpdating || justUpdated}
+            background={preview.theme.background}
+            compact={compact}
+          >
+            {activeScreen ? (
+              <PreviewScreen
+                preview={preview}
+                screen={activeScreen}
+                tabs={tabs}
+                colors={colors}
+              />
+            ) : (
+              <EmptyPreview />
+            )}
+          </PhoneFrame>
+        </motion.div>
       </div>
+
+      {!compact && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="glass-border inline-flex items-center gap-2 rounded-xl bg-white/[0.02] px-4 py-2 text-sm text-white transition hover:bg-white/[0.06]"
+          >
+            <QrCode className="h-4 w-4" />
+            Expo Go soon
+          </button>
+          <button
+            type="button"
+            className="glass-border inline-flex items-center gap-2 rounded-xl bg-white/[0.02] px-4 py-2 text-sm text-white transition hover:bg-white/[0.06]"
+          >
+            <Maximize2 className="h-4 w-4" />
+            Full screen soon
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -205,11 +223,13 @@ function PhoneFrame({
   children,
   isUpdating = false,
   background,
+  compact = false,
 }: {
   device: "ios" | "android";
   children: React.ReactNode;
   isUpdating?: boolean;
   background?: string;
+  compact?: boolean;
 }) {
   const radius = device === "ios" ? "rounded-[44px]" : "rounded-[28px]";
   const innerRadius = device === "ios" ? "rounded-[36px]" : "rounded-[20px]";
@@ -217,7 +237,7 @@ function PhoneFrame({
 
   return (
     <div
-      className={`relative h-[580px] w-[280px] ${radius} border bg-background-secondary p-2.5 shadow-2xl shadow-black/60 transition-all duration-300 ${
+      className={`relative w-auto max-h-full max-w-full aspect-[280/580] ${compact ? "h-full max-h-[48rem]" : "h-[min(72vh,44rem)]"} ${radius} border bg-background-secondary p-2.5 shadow-2xl shadow-black/60 transition-all duration-300 ${
         isUpdating
           ? "border-violet-400/60 shadow-violet-500/30"
           : "border-white/10"

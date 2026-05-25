@@ -82,7 +82,7 @@ export default async function ProjectDetailPage({
   const userPlan: Plan = (profileRow?.plan as Plan | null | undefined) ?? "free";
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="w-full px-4 py-4 sm:px-6 sm:py-5 lg:px-8 xl:px-10">
       <Link
         href="/projects"
         className="inline-flex items-center gap-2 text-sm text-text-secondary transition hover:text-white"
@@ -91,10 +91,10 @@ export default async function ProjectDetailPage({
         All projects
       </Link>
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">{project.name}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+          <h1 className="text-2xl font-bold text-white">{project.name}</h1>
+          <p className="mt-1 line-clamp-1 max-w-2xl text-sm text-text-secondary">
             {project.description ?? project.prompt}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default async function ProjectDetailPage({
         </span>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-4">
         <ProjectDetailTabs
           project={project}
           versions={versions}

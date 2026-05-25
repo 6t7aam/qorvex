@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -120,7 +120,17 @@ export function AIChat({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const currentFilesRef = useRef(currentFiles);
   const shouldAutoScrollRef = useRef(true);
+  const hasScrolledOnMountRef = useRef(false);
   const previousMessageCountRef = useRef(messages.length);
+
+  // On mount, jump straight to the latest message so the editor never opens
+  // with the history stuck at the top.
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    if (!container || hasScrolledOnMountRef.current) return;
+    container.scrollTop = container.scrollHeight;
+    hasScrolledOnMountRef.current = true;
+  }, []);
 
   useEffect(() => {
     const container = scrollRef.current;

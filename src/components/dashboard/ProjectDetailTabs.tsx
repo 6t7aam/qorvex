@@ -293,10 +293,9 @@ export function ProjectDetailTabs({
       <div className="mt-6">
         {tab === "editor" && hasGeneratedCode && (
           <div className="glass-border overflow-hidden rounded-2xl bg-background-secondary/40">
-            <div className="grid h-[calc(100vh-20rem)] min-h-0 grid-cols-1 lg:grid-cols-2">
-              <div className="min-h-0 overflow-hidden border-r border-white/5">
+            <div className="grid h-[calc(100vh-10.5rem)] min-h-[720px] grid-cols-1 lg:grid-cols-[minmax(460px,1.08fr)_minmax(420px,0.92fr)] lg:min-h-[820px]">
+              <div className="min-h-0 overflow-hidden border-b border-white/5 lg:border-b-0 lg:border-r">
                 <AIChat
-                  key={`${project.id}-${files[".qorvex/chat-history.json"]?.length ?? 0}`}
                   projectId={project.id}
                   currentFiles={files}
                   projectName={project.name}
@@ -310,11 +309,12 @@ export function ProjectDetailTabs({
                   onUpdatingChange={setIsPreviewUpdating}
                 />
               </div>
-              <div className="flex min-h-0 items-center justify-center overflow-hidden p-8">
+              <div className="flex min-h-0 items-center justify-center overflow-auto p-4 sm:p-5 lg:p-6">
                 <MobilePreview
                   generatedFiles={files}
                   projectName={project.name}
                   projectPrompt={project.prompt}
+                  compact
                   colors={{
                     primary: project.colors?.primary ?? "#7c3aed",
                     secondary: project.colors?.secondary ?? "#06b6d4",
