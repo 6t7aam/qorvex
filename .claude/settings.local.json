@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(npx next *)",
+      "Bash(echo \"Started PID: $!\")",
+      "Bash(tail -50 /tmp/qorvex-dev.log 2>/dev/null || cat \"C:\\\\Users\\\\21AF~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Qorvex-qorvex\\\\55ca02f4-5cab-4d79-8342-445add5a54ea\\\\tasks\\\\btfcyciwl.output\")",
+      "Read(//tmp/**)",
+      "Bash(curl -sS -o /tmp/r.html -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/api/generate -X POST -H \"Content-Type: application/json\" -d '{\"prompt\":\"test\"}')",
+      "Bash(curl -s -X POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions -H 'Authorization: Bearer AIzaSyAQ-6fOVlr6wa3iyYMr0upXTdpJXc_CNis' -H 'Content-Type: application/json' -d '{\"model\":\"gemini-2.5-flash\",\"messages\":[{\"role\":\"system\",\"content\":\"You return JSON only.\"},{\"role\":\"user\",\"content\":\"Return: {\\\\\"hi\\\\\":\\\\\"world\\\\\"}\"}],\"temperature\":0.15,\"max_tokens\":100}' -w '\\\\nHTTP %{http_code}\\\\n')",
+      "Bash(command -v psql)",
+      "Bash(psql --version)",
+      "Bash(node ./_test-gen.mjs)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"next dev\")"
+    ]
+  }
+}

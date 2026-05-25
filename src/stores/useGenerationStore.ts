@@ -147,9 +147,14 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
       }
 
       if (!response.ok || !response.body) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
         set({
           isGenerating: false,
-          error: `Generation failed (${response.status}).`,
+          error:
+            body?.error ??
+            `Generation failed (${response.status}).`,
         });
         return;
       }
