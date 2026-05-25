@@ -9,6 +9,8 @@ interface PricingTier {
   id: "free" | "pro" | "max";
   name: string;
   price: number;
+  /** Optional original/list price shown struck-through to suggest a discount. */
+  originalPrice?: number;
   description: string;
   features: readonly string[];
   cta: string;
@@ -30,6 +32,7 @@ const TIERS: PricingTier[] = [
     id: PLANS.PRO.id,
     name: PLANS.PRO.name,
     price: PLANS.PRO.price,
+    originalPrice: 19.99,
     description: PLANS.PRO.dailyCreditsLabel,
     features: PLANS.PRO.features,
     cta: "Start Pro",
@@ -40,6 +43,7 @@ const TIERS: PricingTier[] = [
     id: PLANS.MAX.id,
     name: PLANS.MAX.name,
     price: PLANS.MAX.price,
+    originalPrice: 49.99,
     description: PLANS.MAX.dailyCreditsLabel,
     features: PLANS.MAX.features,
     cta: "Go Max",
@@ -81,10 +85,6 @@ export function Pricing({ showHeader = true }: PricingProps) {
             </FadeIn>
           ))}
         </div>
-
-        <p className="mt-10 text-center text-sm text-text-muted">
-          All plans include a 7-day free trial. No credit card required to start.
-        </p>
       </div>
     </section>
   );
@@ -92,6 +92,15 @@ export function Pricing({ showHeader = true }: PricingProps) {
 
 function PricingCard({ tier }: { tier: PricingTier }) {
   const isFree = tier.price === 0;
+  const hasDiscount =
+    typeof tier.originalPrice === "number" &&
+    tier.originalPrice > tier.price &&
+    !isFree;
+  const discountPct = hasDiscount
+    ? Math.round(
+        ((tier.originalPrice! - tier.price) / tier.originalPrice!) * 100,
+      )
+    : 0;
 
   return (
     <div className="group relative h-full">
@@ -126,11 +135,28 @@ function PricingCard({ tier }: { tier: PricingTier }) {
         )}
 
         <div>
-          <h3 className="text-lg font-semibold text-white">{tier.name}</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-lg font-semibold text-white">{tier.name}</h3>
+            {hasDiscount && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-500/30">
+                −{discountPct}%
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-sm text-text-secondary">{tier.description}</p>
         </div>
 
         <div className="mt-6">
+          {hasDiscount && (
+            <div className="mb-1 flex items-baseline gap-2 text-sm">
+              <span className="text-text-muted line-through decoration-rose-400/70 decoration-[1.5px] tabular-nums">
+                ${tier.originalPrice!.toFixed(2)}
+              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">
+                Limited offer
+              </span>
+            </div>
+          )}
           <div className="flex items-baseline gap-1">
             <span
               className={`text-5xl font-bold tracking-tight tabular-nums ${
@@ -141,6 +167,11 @@ function PricingCard({ tier }: { tier: PricingTier }) {
             </span>
             <span className="text-sm text-text-secondary">/ month</span>
           </div>
+          {hasDiscount && (
+            <p className="mt-1 text-xs text-text-muted tabular-nums">
+              You save ${(tier.originalPrice! - tier.price).toFixed(2)}/mo
+            </p>
+          )}
         </div>
 
         <ul className="mt-8 flex-1 space-y-3">

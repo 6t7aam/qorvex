@@ -1,22 +1,32 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 
-const COLUMNS = [
+interface FooterLink {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+interface FooterColumn {
+  title: string;
+  links: FooterLink[];
+}
+
+const COLUMNS: FooterColumn[] = [
   {
     title: "Product",
     links: [
       { label: "Features", href: "/#features" },
-      { label: "Pricing", href: "/pricing" },
+      { label: "How it works", href: "/#how-it-works" },
       { label: "Templates", href: "/#templates" },
-      { label: "Changelog", href: "/changelog" },
+      { label: "Pricing", href: "/pricing" },
     ],
   },
   {
     title: "Company",
     links: [
       { label: "About", href: "/about" },
-      { label: "Blog", href: "/blog" },
-      { label: "Careers", href: "/careers" },
+      { label: "Contact", href: "mailto:hello@qorvex.mov", external: true },
     ],
   },
   {
@@ -56,16 +66,27 @@ export function Footer() {
                 {column.title}
               </h3>
               <ul className="mt-4 space-y-3">
-                {column.links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="link-underline text-sm text-text-secondary transition hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {column.links.map((link) =>
+                  link.external ? (
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
+                        className="link-underline text-sm text-text-secondary transition hover:text-white"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ) : (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="link-underline text-sm text-text-secondary transition hover:text-white"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           ))}

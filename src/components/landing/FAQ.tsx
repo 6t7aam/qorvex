@@ -40,8 +40,8 @@ const FAQS: FaqEntry[] = [
     a: "Qorvex uses a state-of-the-art large language model fine-tuned for React Native and Expo. It is wrapped in a custom code-generation pipeline that adds structured prompting, schema validation, and post-processing — so what you get is clean, production-ready code, not raw model output.",
   },
   {
-    q: "Is there a free trial?",
-    a: "The Free plan is permanently free with a small daily AI credit pool — no credit card required. Paid plans include a 7-day free trial.",
+    q: "Can I try Qorvex without paying?",
+    a: "Yes. The Free plan is permanently free with a small daily AI credit pool — no credit card required to start. You can upgrade to Pro or Max whenever you need a larger daily pool, premium templates, or the AI chat editor.",
   },
 ];
 
