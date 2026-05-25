@@ -58,7 +58,7 @@ export function Logo({
           className={`pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500/40 to-cyan-400/40 opacity-60 blur-md ${styles.icon}`}
         />
         <Image
-          src="/qorvex-logo.svg?v=4"
+          src="/qorvex-logo.svg?v=5"
           alt="Qorvex"
           width={36}
           height={36}

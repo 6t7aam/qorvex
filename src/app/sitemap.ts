@@ -3,9 +3,9 @@ import { QORVEX_SITE_URL } from "@/lib/seo";
 
 const PUBLIC_ROUTES = [
   { path: "", priority: 1, changeFrequency: "daily" },
-  { path: "/pricing", priority: 0.8, changeFrequency: "weekly" },
+  { path: "/pricing", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/signup", priority: 0.8, changeFrequency: "weekly" },
   { path: "/login", priority: 0.4, changeFrequency: "monthly" },
-  { path: "/signup", priority: 0.7, changeFrequency: "weekly" },
 ] as const satisfies ReadonlyArray<{
   path: string;
   priority: number;

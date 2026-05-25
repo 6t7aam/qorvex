@@ -6,10 +6,18 @@ import { FadeIn } from "@/components/shared/FadeIn";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createPageMetadata({
-  absoluteTitle: "Qorvex Pricing",
+  absoluteTitle: "Pricing · Qorvex AI Mobile App Builder",
   description:
-    "Choose a Qorvex plan for AI mobile app generation, GitHub export, premium templates, and advanced app editing.",
+    "Simple pricing for the Qorvex AI mobile app builder. Start free with daily AI credits — upgrade to Pro or Max for premium templates, AI chat editor, GitHub export, and custom deployment.",
   path: "/pricing",
+  keywords: [
+    "AI app builder pricing",
+    "React Native generator subscription",
+    "no-code mobile app pricing",
+    "free AI app builder",
+    "Qorvex Pro plan",
+    "Qorvex Max plan",
+  ],
 });
 
 interface ComparisonRow {

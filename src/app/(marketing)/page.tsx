@@ -9,10 +9,19 @@ import { CTA } from "@/components/landing/CTA";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createPageMetadata({
-  absoluteTitle: "Qorvex — AI Mobile App Builder",
+  absoluteTitle:
+    "Qorvex — AI Mobile App Builder for React Native & Expo",
   description:
-    "Create mobile apps with AI. Turn ideas into React Native and Expo apps with previews, editing, exports, and launch tools.",
+    "Build full iOS & Android apps from a single prompt. Qorvex generates React Native + Expo code, live mobile preview, AI chat editor, and one-click GitHub export. Start free.",
   path: "/",
+  keywords: [
+    "AI mobile app builder online",
+    "prompt to React Native",
+    "build app without coding",
+    "AI Expo Router builder",
+    "MVP generator for founders",
+    "AI app builder free",
+  ],
 });
 
 export default function LandingPage() {
