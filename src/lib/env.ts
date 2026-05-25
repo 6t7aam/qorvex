@@ -8,7 +8,6 @@ const REQUIRED_PUBLIC_VARS = [
 
 const REQUIRED_SERVER_VARS = [
   "SUPABASE_SERVICE_ROLE_KEY",
-  "ANTHROPIC_API_KEY",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
 ] as const;
@@ -23,6 +22,13 @@ export function validateEnv(): { missing: string[] } {
   if (typeof window === "undefined") {
     for (const key of REQUIRED_SERVER_VARS) {
       if (!process.env[key]) missing.push(key);
+    }
+
+    const provider = (process.env.AI_PROVIDER ?? "gemini").toLowerCase();
+    if (provider === "gemini") {
+      if (!process.env.GEMINI_API_KEY) missing.push("GEMINI_API_KEY");
+    } else if (provider === "anthropic") {
+      if (!process.env.ANTHROPIC_API_KEY) missing.push("ANTHROPIC_API_KEY");
     }
   }
 
@@ -41,6 +47,13 @@ export const env = {
   SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+  AI_PROVIDER: process.env.AI_PROVIDER ?? "gemini",
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? "",
+  GEMINI_MODEL: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  GEMINI_INPUT_COST_PER_MILLION:
+    process.env.GEMINI_INPUT_COST_PER_MILLION ?? "0.30",
+  GEMINI_OUTPUT_COST_PER_MILLION:
+    process.env.GEMINI_OUTPUT_COST_PER_MILLION ?? "2.50",
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
   ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL ?? "",
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",

@@ -13,6 +13,7 @@ export interface AITextGenerationOptions {
   prompt: string;
   maxTokens?: number;
   temperature?: number;
+  thinkingBudget?: number;
 }
 
 export interface AITextGenerationResult {

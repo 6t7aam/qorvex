@@ -98,6 +98,7 @@ const MAX_FEATURES = 12;
 const MAX_ENTITY_COUNT = 8;
 const MAX_SCREEN_COUNT = 6;
 const MAX_TABS = 5;
+const DEFAULT_APP_BACKGROUND = "#05070f";
 
 function slugify(value: string) {
   return value
@@ -303,7 +304,7 @@ function buildFallbackPlan(input: GenerationPipelineInput): AppPlan {
       primary: input.colors.primary,
       secondary: input.colors.secondary,
       accent: input.colors.accent,
-      background: "#0b1020",
+      background: DEFAULT_APP_BACKGROUND,
     },
     navigation: {
       type: "tabs",
@@ -428,12 +429,9 @@ function normalizePlan(value: unknown, fallback: AppPlan): AppPlan {
         typeof (value.theme as Record<string, unknown>).accent === "string"
           ? String((value.theme as Record<string, unknown>).accent)
           : fallback.theme.accent,
-      background:
-        typeof value.theme === "object" &&
-        value.theme !== null &&
-        typeof (value.theme as Record<string, unknown>).background === "string"
-          ? String((value.theme as Record<string, unknown>).background)
-          : fallback.theme.background,
+      // Force a dark app canvas by default so generated white text and light
+      // cards stay readable on the very first generation.
+      background: fallback.theme.background,
     },
     navigation: {
       type:
@@ -1311,6 +1309,7 @@ async function runStructuredStage<T>({
   systemPrompt,
   prompt,
   maxTokens,
+  thinkingBudget,
   fallback,
   normalize,
   warnings,
@@ -1321,6 +1320,7 @@ async function runStructuredStage<T>({
   systemPrompt: string;
   prompt: string;
   maxTokens: number;
+  thinkingBudget?: number;
   fallback: T;
   normalize: (value: unknown, fallback: T) => T;
   warnings: string[];
@@ -1366,6 +1366,7 @@ Retry requirements:
           prompt: attemptPrompt,
           maxTokens,
           temperature: attempt === 1 ? 0.15 : 0.1,
+          thinkingBudget,
         }),
         45000,
         `${stageName} timed out before the AI response completed.`,
@@ -1404,7 +1405,7 @@ Return JSON:
 {
   "appName": "string",
   "description": "string",
-  "theme": { "primary": "string", "secondary": "string", "accent": "string", "background": "string" },
+  "theme": { "primary": "string", "secondary": "string", "accent": "string", "background": "${DEFAULT_APP_BACKGROUND}" },
   "navigation": { "type": "tabs", "tabs": ["string"] },
   "screens": [{ "id": "string", "title": "string", "purpose": "string", "route": "string", "tabLabel": "string", "icon": "string" }],
   "features": ["string"],
@@ -1419,6 +1420,7 @@ Rules:
 - include auth or onboarding when relevant
 - include profile or settings
 - tabs should be concise
+- use a near-black app background by default
 - avoid generic filler such as repeated 'Welcome' dashboards unless the product truly needs it
 - prefer differentiated flows, clear user value, and realistic product entities
 - make the information architecture feel like a launch-ready app, not a demo
@@ -1535,6 +1537,7 @@ export async function executeGenerationPipeline(
     systemPrompt: planPrompt.systemPrompt,
     prompt: planPrompt.prompt,
     maxTokens: 2800,
+    thinkingBudget: 4096,
     fallback: fallbackPlan,
     normalize: normalizePlan,
     warnings,
@@ -1558,6 +1561,7 @@ export async function executeGenerationPipeline(
     systemPrompt: screenPrompt.systemPrompt,
     prompt: screenPrompt.prompt,
     maxTokens: 4800,
+    thinkingBudget: 8192,
     fallback: screenFallback,
     normalize: normalizeScreenSpecs,
     warnings,
