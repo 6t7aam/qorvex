@@ -96,6 +96,7 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
     profile?.email ||
     fallbackEmail ||
     "Account";
+  const usageLoaded = Boolean(usage);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -130,16 +131,30 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
   }
 
   const sidebarBody = (
-    <div className="flex h-full flex-col gap-6 p-5">
-      <Logo
-        href="/dashboard"
-        size="md"
-        priority
-        className="text-lg font-bold tracking-tight"
-        onClick={() => setMobileOpen(false)}
-      />
+    <div className="relative flex h-full flex-col gap-6 p-5">
+      <div className="pointer-events-none absolute inset-x-4 top-2 h-32 rounded-full bg-violet-500/12 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-28 left-10 h-32 w-32 rounded-full bg-cyan-500/10 blur-3xl" />
 
-      <nav className="flex flex-col gap-1">
+      <div className="relative rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_24px_80px_rgba(25,8,48,0.45)] backdrop-blur-2xl">
+        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(168,85,247,0.8),rgba(34,211,238,0.65),transparent)]" />
+        <Logo
+          href="/dashboard"
+          size="md"
+          priority
+          className="text-lg font-bold tracking-tight"
+          onClick={() => setMobileOpen(false)}
+        />
+        <div className="mt-4 rounded-2xl border border-violet-400/15 bg-violet-500/10 px-3 py-2.5">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-200/80">
+            Workspace
+          </div>
+          <div className="mt-1 text-sm text-white">
+            Build, edit, and ship better app concepts faster.
+          </div>
+        </div>
+      </div>
+
+      <nav className="relative rounded-[28px] border border-white/10 bg-black/20 p-3 shadow-[0_20px_60px_rgba(8,12,28,0.35)] backdrop-blur-2xl">
         {NAV.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -148,18 +163,21 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
               key={item.href}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+              className={`group relative mb-1 flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm transition ${
                 active
-                  ? "bg-violet-500/15 text-white ring-1 ring-violet-500/30"
+                  ? "bg-[linear-gradient(135deg,rgba(124,58,237,0.3),rgba(14,165,233,0.16))] text-white ring-1 ring-violet-400/30 shadow-[0_12px_30px_rgba(76,29,149,0.28)]"
                   : "text-text-secondary hover:bg-white/[0.04] hover:text-white"
               }`}
             >
+              {active && (
+                <span className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-violet-300 to-cyan-300" />
+              )}
               <Icon
-                className={`h-4 w-4 ${
-                  active ? "text-violet-300" : "text-text-muted"
+                className={`h-4 w-4 transition ${
+                  active ? "text-violet-200" : "text-text-muted group-hover:text-white"
                 }`}
               />
-              {item.label}
+              <span className="font-medium">{item.label}</span>
             </Link>
           );
         })}
@@ -168,7 +186,7 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
           <Link
             href="/admin"
             onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+            className={`mt-2 flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm transition ${
               isActive("/admin")
                 ? "bg-amber-500/15 text-amber-200 ring-1 ring-amber-500/30"
                 : "text-amber-300/80 hover:bg-amber-500/[0.06] hover:text-amber-200"
@@ -180,16 +198,17 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
         )}
       </nav>
 
-      <div className="mt-auto space-y-3 border-t border-white/5 pt-4">
-        {usage && (
+      <div className="mt-auto space-y-3">
+        <div className="rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_20px_60px_rgba(8,12,28,0.35)] backdrop-blur-2xl">
+          {usage && (
           <Link
             href="/billing"
-            className="block rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 transition hover:bg-white/[0.05]"
+            className="block rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3.5 transition hover:bg-white/[0.05]"
           >
             <div className="text-[10px] uppercase tracking-wider text-text-muted">
               Available AI Credits
             </div>
-            <div className="mt-1 text-sm font-semibold text-white">
+            <div className="mt-1 text-base font-semibold text-white">
               {usage.totalAvailableCredits.toLocaleString()} available
             </div>
             <div className="mt-1 text-[11px] text-text-secondary">
@@ -200,49 +219,60 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
               ${usage.estimatedCostUsd.toFixed(3)} used today • resets in {resetCountdown}
             </div>
           </Link>
-        )}
+          )}
+          {!usageLoaded && (
+            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3.5">
+              <div className="text-[10px] uppercase tracking-wider text-text-muted">
+                Available AI Credits
+              </div>
+              <div className="mt-1 text-sm text-text-secondary">
+                Loading usage…
+              </div>
+            </div>
+          )}
 
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 text-xs font-semibold text-white">
-            {initialsFromName(profile, fallbackEmail)}
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 text-xs font-semibold text-white shadow-[0_10px_26px_rgba(76,29,149,0.35)]">
+              {initialsFromName(profile, fallbackEmail)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">
+                {displayName}
+              </p>
+              <span
+                className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider ${badge.className}`}
+              >
+                {badge.label}
+              </span>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-white">
-              {displayName}
-            </p>
-            <span
-              className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider ${badge.className}`}
+
+          {plan === "free" && (
+            <Link
+              href="/billing"
+              className="gradient-bg mt-4 block rounded-2xl px-3 py-2.5 text-center text-xs font-semibold text-white transition hover:opacity-90"
             >
-              {badge.label}
-            </span>
-          </div>
-        </div>
+              Upgrade
+            </Link>
+          )}
 
-        {plan === "free" && (
-          <Link
-            href="/billing"
-            className="gradient-bg block rounded-lg px-3 py-2 text-center text-xs font-semibold text-white transition hover:opacity-90"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="mt-3 flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-medium text-text-secondary transition hover:bg-white/[0.04] hover:text-white disabled:opacity-60"
           >
-            Upgrade
-          </Link>
-        )}
-
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={signingOut}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-white/[0.04] hover:text-white disabled:opacity-60"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          {signingOut ? "Signing out..." : "Sign out"}
-        </button>
+            <LogOut className="h-3.5 w-3.5" />
+            {signingOut ? "Signing out..." : "Sign out"}
+          </button>
+        </div>
       </div>
     </div>
   );
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-2 border-b border-white/5 bg-background-primary/80 px-4 backdrop-blur-xl md:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-2 border-b border-white/5 bg-background-primary/75 px-4 backdrop-blur-2xl md:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -257,7 +287,7 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
         </div>
       </header>
 
-      <aside className="sticky top-0 hidden h-screen w-[240px] shrink-0 border-r border-white/5 bg-background-secondary/40 md:block">
+      <aside className="sticky top-0 hidden h-screen w-[268px] shrink-0 border-r border-white/5 bg-background-secondary/20 md:block">
         {sidebarBody}
       </aside>
 
@@ -267,7 +297,7 @@ export function Sidebar({ profile, fallbackEmail }: SidebarProps) {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-72 max-w-[80vw] border-r border-white/10 bg-background-primary">
+          <div className="absolute left-0 top-0 h-full w-72 max-w-[80vw] border-r border-white/10 bg-background-primary/95 backdrop-blur-2xl">
             <button
               type="button"
               onClick={() => setMobileOpen(false)}

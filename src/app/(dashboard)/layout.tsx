@@ -50,7 +50,15 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen flex-col bg-background-primary text-text-primary md:flex-row">
       <PendingPaymentWatcher />
       <Sidebar profile={profile} fallbackEmail={userEmail} />
-      <main className="flex-1 overflow-x-hidden">{children}</main>
+      <main className="relative flex-1 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(76,29,149,0.24)_0%,rgba(37,99,235,0.12)_38%,rgba(8,8,8,0.92)_100%)]" />
+        <div className="pointer-events-none absolute left-[-12rem] top-[-5rem] h-[34rem] w-[34rem] rounded-full bg-violet-700/18 blur-[150px]" />
+        <div className="pointer-events-none absolute right-[-10rem] top-24 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-[130px]" />
+        <div className="pointer-events-none absolute inset-x-[12%] top-0 h-32 bg-[linear-gradient(90deg,rgba(124,58,237,0.16),rgba(59,130,246,0.12),transparent)] blur-[90px]" />
+        <div className="relative z-10 min-h-screen overflow-x-hidden">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

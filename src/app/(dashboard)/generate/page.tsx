@@ -152,6 +152,18 @@ function GeneratePageInner() {
     : Infinity;
   const planLimit = usage?.limitCredits ?? 0;
   const used = usage?.usedCredits ?? 0;
+  const usageSummaryText =
+    usageLoading || (user && !usage)
+      ? "Loading daily AI credits..."
+      : planLimit > 0
+        ? `${used.toLocaleString()}/${planLimit.toLocaleString()} daily credits used${
+            Number.isFinite(totalAvailableCredits) &&
+            totalAvailableCredits > 0 &&
+            limitCheck.allowed
+              ? ` · ${totalAvailableCredits.toLocaleString()} total available · resets in ${resetCountdown}`
+              : ""
+          }`
+        : "Daily AI credits will appear here shortly.";
 
   const filesRecord = useMemo<Record<string, string>>(() => {
     return generatedFiles.reduce<Record<string, string>>((acc, file) => {
@@ -466,17 +478,7 @@ function GeneratePageInner() {
                 )}
               </div>
 
-              <p className="px-1 text-xs text-text-muted">
-                {planLimit < 0
-                  ? "Daily AI credits are optimized for the Max plan."
-                  : `${used.toLocaleString()}/${planLimit.toLocaleString()} daily credits used${
-                      Number.isFinite(totalAvailableCredits) &&
-                      totalAvailableCredits > 0 &&
-                      limitCheck.allowed
-                        ? ` · ${totalAvailableCredits.toLocaleString()} total available · resets in ${resetCountdown}`
-                        : ""
-                    }`}
-              </p>
+              <p className="px-1 text-xs text-text-muted">{usageSummaryText}</p>
             </div>
 
             <div className="flex flex-col gap-5 xl:sticky xl:top-6">

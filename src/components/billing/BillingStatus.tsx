@@ -17,6 +17,10 @@ export function BillingStatus() {
     usage.limitCredits > 0
       ? Math.min(100, Math.round((usage.usedCredits / usage.limitCredits) * 100))
       : 0;
+  const usageText =
+    usage.limitCredits > 0
+      ? `${usage.usedCredits.toLocaleString()} / ${usage.limitCredits.toLocaleString()} daily used`
+      : `${usage.usedCredits.toLocaleString()} daily used`;
   const totalAvailableCredits = usage.totalAvailableCredits;
   const outOfRoom = totalAvailableCredits <= 0;
 
@@ -80,8 +84,7 @@ export function BillingStatus() {
         />
       </div>
       <div className="mt-2 text-[10px] text-text-muted">
-        {usage.usedCredits.toLocaleString()} / {usage.limitCredits.toLocaleString()} daily
-        used • {usage.bonusCredits.toLocaleString()} bonus credits
+        {usageText} • {usage.bonusCredits.toLocaleString()} bonus credits
       </div>
       {plan === "free" && !outOfRoom ? (
         <Link

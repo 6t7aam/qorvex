@@ -1336,8 +1336,20 @@ async function runStructuredStage<T>({
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
+      const attemptPrompt =
+        attempt === 1
+          ? prompt
+          : `${prompt}
+
+Retry requirements:
+- previous attempt issue: ${lastError ?? "response quality or JSON validity"}
+- return one strict valid JSON object only
+- be more specific, more product-grade, and less generic
+- avoid placeholder wording and repeated patterns
+- preserve the requested app domain and features`;
+
       const budgetCheck = ensureStageBudget
-        ? await ensureStageBudget(stageName, prompt, maxTokens)
+        ? await ensureStageBudget(stageName, attemptPrompt, maxTokens)
         : { allowed: true };
 
       if (!budgetCheck.allowed) {
@@ -1351,9 +1363,9 @@ async function runStructuredStage<T>({
       const result = await withTimeout(
         provider.generateText({
           systemPrompt,
-          prompt,
+          prompt: attemptPrompt,
           maxTokens,
-          temperature: 0.15,
+          temperature: attempt === 1 ? 0.15 : 0.1,
         }),
         45000,
         `${stageName} timed out before the AI response completed.`,

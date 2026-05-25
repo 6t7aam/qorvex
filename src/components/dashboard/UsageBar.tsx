@@ -21,6 +21,7 @@ export function UsageBar({
   resetAt,
   plan = "free",
 }: UsageBarProps) {
+  const hasLimit = limitCredits > 0;
   const pct = Math.min(
     100,
     Math.round((usedCredits / Math.max(limitCredits, 1)) * 100),
@@ -68,7 +69,9 @@ export function UsageBar({
         <div className="rounded-xl bg-white/[0.03] px-3 py-2">
           <div className="text-text-muted">Used today</div>
           <div className="mt-1 font-semibold text-white">
-            {usedCredits.toLocaleString()} / {limitCredits.toLocaleString()}
+            {hasLimit
+              ? `${usedCredits.toLocaleString()} / ${limitCredits.toLocaleString()}`
+              : `${usedCredits.toLocaleString()} used`}
           </div>
         </div>
       </div>
