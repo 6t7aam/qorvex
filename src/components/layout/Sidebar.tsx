@@ -150,7 +150,6 @@ export function Sidebar({ profile, fallbackEmail, initialUsage = null }: Sidebar
       <div className="pointer-events-none absolute bottom-28 left-10 h-32 w-32 rounded-full bg-cyan-500/10 blur-3xl animate-pulse-slow [animation-delay:1s]" />
 
       <div className="relative rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-[0_24px_80px_rgba(25,8,48,0.45)] backdrop-blur-2xl">
-        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(168,85,247,0.8),rgba(34,211,238,0.65),transparent)] animate-shimmer-x" />
         <Logo
           href="/dashboard"
           size="md"

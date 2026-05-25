@@ -16,10 +16,7 @@ import {
 import { useGenerationStore } from "@/stores/useGenerationStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useUIStore } from "@/stores/useUIStore";
-import {
-  INITIAL_APP_GENERATION_COST,
-  creditsToUsd,
-} from "@/lib/ai-credits";
+import { INITIAL_APP_GENERATION_COST } from "@/lib/ai-credits";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 import type { GeneratedFile, UserProfile } from "@/types";
 import { GenerationProgress } from "@/components/generator/GenerationProgress";
@@ -179,7 +176,6 @@ function GeneratePageInner() {
   const charFeedback = getCharFeedback(currentPrompt.length);
   const isLargeGenerationRequest =
     currentPrompt.length > 900 || features.length > 6;
-  const initialGenerationCostUsd = creditsToUsd(INITIAL_APP_GENERATION_COST);
 
   function toggleFeature(name: string) {
     setFeatures((prev) =>
@@ -211,7 +207,7 @@ function GeneratePageInner() {
   if (isGenerating) {
     return (
       <>
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <GenerationProgress />
         </div>
         <UpgradeModal />
@@ -338,9 +334,7 @@ function GeneratePageInner() {
                   <div className="mt-1 text-lg font-semibold text-white">
                     {INITIAL_APP_GENERATION_COST.toLocaleString()}
                   </div>
-                  <div className="text-xs text-cyan-100/75">
-                    ~${initialGenerationCostUsd.toFixed(2)}
-                  </div>
+                  <div className="text-xs text-cyan-100/75">AI credits</div>
                 </div>
                 <div className="rounded-2xl border border-violet-400/20 bg-violet-500/10 px-4 py-3 backdrop-blur-xl">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-100/70">

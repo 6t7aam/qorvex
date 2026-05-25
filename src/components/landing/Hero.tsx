@@ -124,127 +124,133 @@ export function Hero() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="mx-auto flex max-w-4xl flex-col items-center text-center"
+          className="grid items-center gap-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12 xl:gap-20"
         >
-          <motion.div variants={itemVariants}>
-            <div className="relative inline-flex items-center gap-2 rounded-full p-[1px]">
-              <div
-                aria-hidden
-                className="absolute inset-0 rounded-full opacity-90 [background:linear-gradient(120deg,#7c3aed,#06b6d4,#7c3aed)] [background-size:200%_200%] animate-gradient-shift"
-              />
-              <span className="relative inline-flex items-center gap-2 rounded-full bg-background-primary px-4 py-1.5 text-xs font-medium text-text-secondary">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
+          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+            <motion.div variants={itemVariants}>
+              <div className="relative inline-flex items-center gap-2 rounded-full p-[1px]">
+                <div
+                  aria-hidden
+                  className="absolute inset-0 rounded-full opacity-90 [background:linear-gradient(120deg,#7c3aed,#06b6d4,#7c3aed)] [background-size:200%_200%] animate-gradient-shift"
+                />
+                <span className="relative inline-flex items-center gap-2 rounded-full bg-background-primary px-4 py-1.5 text-xs font-medium text-text-secondary">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
+                  </span>
+                  <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                  New · AI-powered app generation
                 </span>
-                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                New · AI-powered app generation
-              </span>
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
 
-          <motion.h1
-            variants={itemVariants}
-            className="mt-8 text-balance text-5xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl"
-          >
-            Turn ideas into
-            <br />
-            <span className="relative inline-block min-h-[1.1em]">
-              <motion.span
-                key={ROTATING_WORDS[wordIndex]}
-                initial={{ y: 18, opacity: 0, filter: "blur(8px)" }}
-                animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-                exit={{ y: -18, opacity: 0, filter: "blur(8px)" }}
-                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-                className="gradient-text inline-block"
+            <motion.h1
+              variants={itemVariants}
+              className="mt-8 text-balance text-5xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5.5rem] xl:text-[6.5rem]"
+            >
+              Turn ideas into
+              <br />
+              <span className="relative inline-block min-h-[1.1em]">
+                <motion.span
+                  key={ROTATING_WORDS[wordIndex]}
+                  initial={{ y: 18, opacity: 0, filter: "blur(8px)" }}
+                  animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+                  exit={{ y: -18, opacity: 0, filter: "blur(8px)" }}
+                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  className="gradient-text inline-block"
+                >
+                  {ROTATING_WORDS[wordIndex]}
+                </motion.span>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-2 -bottom-1 h-px bg-gradient-to-r from-transparent via-violet-400/60 to-transparent"
+                />
+              </span>
+            </motion.h1>
+
+            <motion.p
+              variants={itemVariants}
+              className="mt-6 max-w-2xl text-balance text-lg text-text-secondary sm:text-xl"
+            >
+              Describe your app idea in plain English. Qorvex generates a complete
+              React Native app with navigation, screens, and backend — ready to
+              deploy in minutes.
+            </motion.p>
+
+            <motion.div
+              variants={itemVariants}
+              className="mt-10 flex flex-col items-center gap-3 sm:flex-row lg:items-start"
+            >
+              <Link
+                href="/signup"
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-600/20 transition-all duration-300 hover:scale-[1.03] hover:shadow-violet-600/50"
               >
-                {ROTATING_WORDS[wordIndex]}
-              </motion.span>
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-x-2 -bottom-1 h-px bg-gradient-to-r from-transparent via-violet-400/60 to-transparent"
-              />
-            </span>
-          </motion.h1>
-
-          <motion.p
-            variants={itemVariants}
-            className="mt-6 max-w-2xl text-balance text-lg text-text-secondary sm:text-xl"
-          >
-            Describe your app idea in plain English. Qorvex generates a complete
-            React Native app with navigation, screens, and backend — ready to
-            deploy in minutes.
-          </motion.p>
-
-          <motion.div
-            variants={itemVariants}
-            className="mt-10 flex flex-col items-center gap-3 sm:flex-row"
-          >
-            <Link
-              href="/signup"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-violet-600/20 transition-all duration-300 hover:scale-[1.03] hover:shadow-violet-600/50"
-            >
-              <span className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 bg-[length:200%_100%] animate-gradient-shift" />
-              <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-[100%]" />
-              <span className="relative inline-flex items-center gap-2">
-                Start building for free
-                <span className="transition-transform group-hover:translate-x-1">
-                  →
+                <span className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 bg-[length:200%_100%] animate-gradient-shift" />
+                <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-[100%]" />
+                <span className="relative inline-flex items-center gap-2">
+                  Start building for free
+                  <span className="transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
                 </span>
-              </span>
-            </Link>
-            <Link
-              href="#how-it-works"
-              scroll
-              className="group glass-border relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-white/[0.02] px-6 py-3.5 text-base font-medium text-white transition hover:border-violet-400/40 hover:bg-white/[0.06]"
+              </Link>
+              <Link
+                href="#how-it-works"
+                scroll
+                className="group glass-border relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-white/[0.02] px-6 py-3.5 text-base font-medium text-white transition hover:border-violet-400/40 hover:bg-white/[0.06]"
+              >
+                <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/15 ring-1 ring-violet-400/30">
+                  <span className="absolute inset-0 rounded-full bg-violet-500/30 animate-ripple" />
+                  <Play className="relative h-3 w-3 text-violet-200" />
+                </span>
+                Watch how it works
+              </Link>
+            </motion.div>
+
+            <motion.div
+              variants={itemVariants}
+              className="mt-8 flex flex-col items-center gap-4 text-sm text-text-secondary sm:flex-row sm:gap-6 lg:items-start"
             >
-              <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/15 ring-1 ring-violet-400/30">
-                <span className="absolute inset-0 rounded-full bg-violet-500/30 animate-ripple" />
-                <Play className="relative h-3 w-3 text-violet-200" />
-              </span>
-              Watch how it works
-            </Link>
-          </motion.div>
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  {AVATARS.map((a) => (
+                    <div
+                      key={a.initials}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-background-primary text-[10px] font-semibold text-white transition-transform duration-300 hover:scale-110 hover:z-10"
+                      style={{ backgroundColor: a.color }}
+                    >
+                      {a.initials}
+                    </div>
+                  ))}
+                </div>
+                <span>Join 2,400+ builders</span>
+              </div>
+              <div className="hidden h-4 w-px bg-white/10 sm:block" />
+              <div className="flex items-center gap-1.5">
+                <div className="flex">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
+                    />
+                  ))}
+                </div>
+                <span className="text-text-secondary">4.9/5 rating</span>
+              </div>
+            </motion.div>
+          </div>
 
           <motion.div
             variants={itemVariants}
-            className="mt-8 flex flex-col items-center gap-4 text-sm text-text-secondary sm:flex-row sm:gap-6"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {AVATARS.map((a) => (
-                  <div
-                    key={a.initials}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-background-primary text-[10px] font-semibold text-white transition-transform duration-300 hover:scale-110 hover:z-10"
-                    style={{ backgroundColor: a.color }}
-                  >
-                    {a.initials}
-                  </div>
-                ))}
-              </div>
-              <span>Join 2,400+ builders</span>
-            </div>
-            <div className="hidden h-4 w-px bg-white/10 sm:block" />
-            <div className="flex items-center gap-1.5">
-              <div className="flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
-                  />
-                ))}
-              </div>
-              <span className="text-text-secondary">4.9/5 rating</span>
-            </div>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="relative mt-20 flex items-end justify-center gap-6 sm:gap-10"
+            className="relative mt-4 flex items-end justify-center gap-6 sm:gap-10 lg:mt-0 lg:justify-end lg:gap-8 xl:gap-12"
           >
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-10 -bottom-12 h-40 rounded-[50%] bg-violet-500/25 blur-3xl"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-10 top-1/2 hidden h-72 w-72 -translate-y-1/2 rounded-full bg-cyan-500/15 blur-[100px] lg:block"
             />
             {FAKE_APP_SCREENS.map((screen, idx) => (
               <PhoneMockup key={idx} index={idx} {...screen} />

@@ -7,7 +7,6 @@ interface UsageBarProps {
   dailyRemainingCredits: number;
   bonusCredits: number;
   totalAvailableCredits: number;
-  estimatedCostUsd: number;
   resetAt: string;
   plan?: "free" | "pro" | "max";
 }
@@ -18,7 +17,6 @@ export function UsageBar({
   dailyRemainingCredits,
   bonusCredits,
   totalAvailableCredits,
-  estimatedCostUsd,
   resetAt,
   plan = "free",
 }: UsageBarProps) {
@@ -41,30 +39,20 @@ export function UsageBar({
         aria-hidden
         className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-violet-500/15 blur-3xl"
       />
-      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm font-medium text-white">
-            <span className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/30">
-              <Zap className="h-3 w-3 text-violet-300" />
-            </span>
-            {totalAvailableCredits.toLocaleString()} AI credits available
-          </div>
-          <div className="mt-1 text-xs text-text-muted">
-            <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-text-secondary">
-              {plan}
-            </span>{" "}
-            • {dailyRemainingCredits.toLocaleString()} daily +{" "}
-            {bonusCredits.toLocaleString()} bonus • resets in{" "}
-            {formatResetCountdown(resetAt)}
-          </div>
+      <div className="relative">
+        <div className="flex items-center gap-2 text-sm font-medium text-white">
+          <span className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/15 ring-1 ring-violet-500/30">
+            <Zap className="h-3 w-3 text-violet-300" />
+          </span>
+          {totalAvailableCredits.toLocaleString()} AI credits available
         </div>
-        <div className="text-left sm:text-right">
-          <div className="text-xs uppercase tracking-wider text-text-muted">
-            Estimated cost
-          </div>
-          <div className="text-sm font-semibold text-white tabular-nums">
-            ${estimatedCostUsd.toFixed(3)}
-          </div>
+        <div className="mt-1 text-xs text-text-muted">
+          <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-text-secondary">
+            {plan}
+          </span>{" "}
+          • {dailyRemainingCredits.toLocaleString()} daily +{" "}
+          {bonusCredits.toLocaleString()} bonus • resets in{" "}
+          {formatResetCountdown(resetAt)}
         </div>
       </div>
 
@@ -95,9 +83,11 @@ export function UsageBar({
         <div
           className={`relative h-full rounded-full bg-gradient-to-r ${barGradient} bg-[length:200%_100%] animate-gradient-shift shadow-[0_0_18px_rgba(168,85,247,0.45)] transition-all duration-700`}
           style={{ width: `${pct}%` }}
-        >
-          <span className="absolute inset-y-0 right-0 w-12 -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer-x" />
-        </div>
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 w-1/4 -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent animate-shimmer-x"
+        />
       </div>
       <div className="relative mt-1.5 text-right text-[10px] tabular-nums text-text-muted">
         {pct}% used

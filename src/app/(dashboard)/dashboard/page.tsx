@@ -216,7 +216,6 @@ export default async function DashboardPage() {
             dailyRemainingCredits={usage.dailyRemainingCredits}
             bonusCredits={usage.bonusCredits}
             totalAvailableCredits={usage.totalAvailableCredits}
-            estimatedCostUsd={usage.estimatedCostUsd}
             resetAt={usage.resetAt}
             plan={plan}
           />
