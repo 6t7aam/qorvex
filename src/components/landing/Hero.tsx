@@ -242,7 +242,7 @@ export function Hero() {
 
           <motion.div
             variants={itemVariants}
-            className="relative mt-4 flex items-end justify-center gap-6 sm:gap-10 lg:mt-0 lg:justify-end lg:gap-8 xl:gap-12"
+            className="relative mt-4 flex w-full items-end justify-center gap-3 sm:gap-8 lg:mt-0 lg:justify-end lg:gap-8 xl:gap-12"
           >
             <div
               aria-hidden
@@ -284,7 +284,7 @@ function PhoneMockup({
       style={{ animationDelay: `${index * 0.5}s` }}
     >
       <div className="absolute -inset-3 rounded-[40px] bg-gradient-to-br from-violet-500/30 via-transparent to-cyan-400/30 opacity-50 blur-2xl" />
-      <div className="relative h-[420px] w-[210px] rounded-[34px] border border-white/10 bg-background-secondary p-2.5 shadow-2xl shadow-black/60">
+      <div className="relative h-[320px] w-[150px] rounded-[28px] border border-white/10 bg-background-secondary p-2 shadow-2xl shadow-black/60 sm:h-[380px] sm:w-[185px] sm:rounded-[32px] sm:p-2.5 lg:h-[420px] lg:w-[210px] lg:rounded-[34px]">
         <div className="relative h-full w-full overflow-hidden rounded-[26px] bg-background-tertiary">
           <div
             aria-hidden
