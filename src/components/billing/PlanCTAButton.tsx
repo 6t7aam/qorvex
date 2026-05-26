@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { PaymentModal } from "@/components/billing/PaymentModal";
 import type { Plan } from "@/types";
 
 type CardPlan = "free" | "pro" | "max";
@@ -23,8 +23,8 @@ export function PlanCTAButton({
   highlight,
   pendingPlan,
 }: PlanCTAButtonProps) {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [modalPlan, setModalPlan] = useState<"pro" | "max" | null>(null);
 
   const isCurrent = cardPlan === userPlan;
   const isDowngrade = cardPlan === "free" && userPlan !== "free";
@@ -38,7 +38,8 @@ export function PlanCTAButton({
         toast.error("You need to be signed in to upgrade.");
         return;
       }
-      setModalPlan(cardPlan as "pro" | "max");
+      setPending(true);
+      router.push(`/checkout?plan=${cardPlan}`);
       return;
     }
 
@@ -103,24 +104,14 @@ export function PlanCTAButton({
     : "glass-border bg-white/[0.02] text-white hover:bg-white/[0.06]";
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={go}
-        disabled={pending}
-        className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${styling}`}
-      >
-        {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        {pending ? "Redirecting…" : label}
-      </button>
-
-      {modalPlan && userId && (
-        <PaymentModal
-          plan={modalPlan}
-          userId={userId}
-          onClose={() => setModalPlan(null)}
-        />
-      )}
-    </>
+    <button
+      type="button"
+      onClick={go}
+      disabled={pending}
+      className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${styling}`}
+    >
+      {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+      {pending ? "Redirecting…" : label}
+    </button>
   );
 }

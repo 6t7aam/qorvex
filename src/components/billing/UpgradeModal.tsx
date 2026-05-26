@@ -1,43 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Lock, X } from "lucide-react";
-import { toast } from "sonner";
 import { PLANS } from "@/lib/constants";
 import { useUIStore } from "@/stores/useUIStore";
 
 type CheckoutPlan = "pro" | "max";
 
 export function UpgradeModal() {
+  const router = useRouter();
   const open = useUIStore((s) => s.upgradeModalOpen);
   const setOpen = useUIStore((s) => s.setUpgradeModal);
   const [pending, setPending] = useState<CheckoutPlan | null>(null);
 
-  async function startCheckout(plan: CheckoutPlan) {
+  function startCheckout(plan: CheckoutPlan) {
     setPending(plan);
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-      const body = (await res.json().catch(() => null)) as {
-        url?: string;
-        error?: string;
-      } | null;
-      if (!res.ok || !body?.url) {
-        toast.error(body?.error ?? `Checkout failed (${res.status})`);
-        setPending(null);
-        return;
-      }
-      window.location.href = body.url;
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Checkout request failed",
-      );
-      setPending(null);
-    }
+    router.push(`/checkout?plan=${plan}`);
   }
 
   return (

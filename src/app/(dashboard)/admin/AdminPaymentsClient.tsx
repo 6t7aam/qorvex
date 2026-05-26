@@ -12,14 +12,36 @@ interface AdminPaymentRow extends ManualPayment {
   user_full_name: string | null;
 }
 
+export interface AdminCryptoPaymentRow {
+  id: string;
+  order_id: string;
+  user_id: string;
+  provider: string;
+  subscription_plan: "pro" | "max";
+  amount_usd: number;
+  pay_currency: string | null;
+  pay_amount: number | null;
+  status: string;
+  payment_status: string | null;
+  payment_id: string | null;
+  created_at: string;
+  user_email: string | null;
+  user_full_name: string | null;
+}
+
 interface AdminPaymentsClientProps {
   pending: AdminPaymentRow[];
   all: AdminPaymentRow[];
+  crypto: AdminCryptoPaymentRow[];
 }
 
 const PAGE_SIZE = 20;
 
-export function AdminPaymentsClient({ pending, all }: AdminPaymentsClientProps) {
+export function AdminPaymentsClient({
+  pending,
+  all,
+  crypto,
+}: AdminPaymentsClientProps) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -336,7 +358,128 @@ export function AdminPaymentsClient({ pending, all }: AdminPaymentsClientProps) 
           </div>
         )}
       </section>
+
+      <CryptoPaymentsSection rows={crypto} />
     </>
+  );
+}
+
+function CryptoPaymentsSection({ rows }: { rows: AdminCryptoPaymentRow[] }) {
+  return (
+    <section className="mt-10">
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-white">Crypto payments</h2>
+        <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold text-violet-200 ring-1 ring-violet-500/30">
+          {rows.length}
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="glass-border mt-4 rounded-2xl bg-background-secondary/30 px-5 py-8 text-center text-sm text-text-secondary">
+          No crypto payments yet.
+        </div>
+      ) : (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-background-secondary/30">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-white/[0.03] text-left text-xs uppercase tracking-wider text-text-muted">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">Order ID</th>
+                  <th className="px-4 py-2.5 font-medium">User</th>
+                  <th className="px-4 py-2.5 font-medium">Plan</th>
+                  <th className="px-4 py-2.5 font-medium">Amount</th>
+                  <th className="px-4 py-2.5 font-medium">Currency</th>
+                  <th className="px-4 py-2.5 font-medium">Status</th>
+                  <th className="px-4 py-2.5 font-medium">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((p) => (
+                  <tr
+                    key={p.id}
+                    className="border-t border-white/5 text-text-secondary"
+                  >
+                    <td
+                      className="px-4 py-3 font-mono text-xs text-amber-300"
+                      title={p.order_id}
+                    >
+                      <div className="max-w-[220px] truncate">{p.order_id}</div>
+                      {p.payment_id && (
+                        <div className="mt-0.5 text-[10px] text-text-muted">
+                          pid: {p.payment_id}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-white">
+                      {p.user_email ?? p.user_id}
+                    </td>
+                    <td className="px-4 py-3">
+                      <PlanBadge plan={p.subscription_plan} />
+                    </td>
+                    <td className="px-4 py-3 text-emerald-300">
+                      ${Number(p.amount_usd).toFixed(2)}
+                      {p.pay_amount ? (
+                        <div className="text-[10px] text-text-muted">
+                          {Number(p.pay_amount).toFixed(8).replace(/\.?0+$/, "")}{" "}
+                          {(p.pay_currency ?? "").toUpperCase()}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 uppercase">
+                      {p.pay_currency ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <CryptoStatusBadge
+                        status={p.status}
+                        paymentStatus={p.payment_status}
+                      />
+                    </td>
+                    <td className="px-4 py-3">{formatDate(p.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CryptoStatusBadge({
+  status,
+  paymentStatus,
+}: {
+  status: string;
+  paymentStatus: string | null;
+}) {
+  let tone: "emerald" | "amber" | "cyan" | "red" | "neutral" = "neutral";
+  if (status === "finished") tone = "emerald";
+  else if (
+    status === "confirming" ||
+    status === "sending" ||
+    status === "partially_paid" ||
+    paymentStatus === "confirming"
+  )
+    tone = "cyan";
+  else if (status === "failed" || status === "expired" || status === "refunded")
+    tone = "red";
+  else if (status === "pending" || status === "waiting") tone = "amber";
+
+  const toneMap: Record<typeof tone, string> = {
+    emerald: "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30",
+    amber: "bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30",
+    cyan: "bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30",
+    red: "bg-red-500/15 text-red-300 ring-1 ring-red-500/30",
+    neutral: "bg-white/10 text-text-secondary ring-1 ring-white/10",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${toneMap[tone]}`}
+    >
+      {status}
+    </span>
   );
 }
 
