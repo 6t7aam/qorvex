@@ -15,7 +15,8 @@
       "Bash(pkill -f \"next dev\")",
       "Bash(node ./_inspect-meditation.mjs)",
       "Bash(npx tsc *)",
-      "Bash(echo \"EXIT=$?\")"
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npm run *)"
     ]
   }
 }

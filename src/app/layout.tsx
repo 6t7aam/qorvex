@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { TawkProvider } from "@/components/providers/TawkProvider";
 import {
   QORVEX_BRAND_TITLE,
   QORVEX_DEFAULT_DESCRIPTION,
@@ -163,6 +164,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} dark min-h-screen bg-background-primary text-text-primary antialiased`}
       >
         <Providers>{children}</Providers>
+        <TawkProvider />
       </body>
     </html>
   );
