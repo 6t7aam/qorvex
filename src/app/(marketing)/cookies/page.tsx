@@ -98,7 +98,6 @@ export default function CookiesPage() {
               </p>
               <ul className="ml-5 list-disc space-y-1">
                 <li><strong className="text-white">Supabase</strong> — authentication and session management (e.g., <code className="rounded bg-white/[0.05] px-1.5 py-0.5 text-xs text-violet-200">sb-access-token</code>).</li>
-                <li><strong className="text-white">Stripe</strong> — fraud prevention on checkout pages (only loaded on billing / checkout flows).</li>
                 <li><strong className="text-white">Vercel</strong> — infrastructure-level cookies for routing and edge caching.</li>
               </ul>
               <p>

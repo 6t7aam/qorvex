@@ -40,6 +40,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/payments/nowpayments/webhook|api/auth|api/generate|api/manual-payments|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|woff|woff2|ttf|eot)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/payments/nowpayments/webhook|api/auth|api/generate|api/manual-payments|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|woff|woff2|ttf|eot)$).*)",
   ],
 };

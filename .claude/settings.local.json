@@ -16,7 +16,13 @@
       "Bash(node ./_inspect-meditation.mjs)",
       "Bash(npx tsc *)",
       "Bash(echo \"EXIT=$?\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(cd \"d:/Qorvex/qorvex\" && rm -rf src/app/api/stripe src/lib/stripe src/services/stripe.service.ts src/components/billing/ManageBillingButton.tsx src/components/billing/CheckoutSuccessSync.tsx && echo \"deleted\" && ls src/app/api/ && echo \"---services---\" && ls src/services/ && echo \"---billing components---\" && ls src/components/billing/)",
+      "Bash(npm install *)",
+      "Bash(echo \"--- tsc exit: $? ---\")"
+    ],
+    "additionalDirectories": [
+      "d:\\Qorvex\\qorvex\\src\\app\\api\\stripe"
     ]
   }
 }

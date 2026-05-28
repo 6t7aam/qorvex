@@ -32,7 +32,7 @@ export function PlanCTAButton({
   const hasPendingForThisCard =
     isPaidUpgrade && pendingPlan === cardPlan;
 
-  async function go() {
+  function go() {
     if (isPaidUpgrade) {
       if (!userId) {
         toast.error("You need to be signed in to upgrade.");
@@ -40,27 +40,6 @@ export function PlanCTAButton({
       }
       setPending(true);
       router.push(`/checkout?plan=${cardPlan}`);
-      return;
-    }
-
-    if (isDowngrade) {
-      setPending(true);
-      try {
-        const res = await fetch("/api/stripe/portal", { method: "POST" });
-        const body = (await res.json().catch(() => null)) as {
-          url?: string;
-          error?: string;
-        } | null;
-        if (!res.ok || !body?.url) {
-          toast.error(body?.error ?? `Portal request failed (${res.status})`);
-          setPending(false);
-          return;
-        }
-        window.location.href = body.url;
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Request failed");
-        setPending(false);
-      }
     }
   }
 
@@ -88,10 +67,21 @@ export function PlanCTAButton({
     );
   }
 
-  let label: string;
   if (isDowngrade) {
-    label = "Downgrade";
-  } else if (cardPlan === "pro") {
+    return (
+      <button
+        type="button"
+        disabled
+        title="Your paid plan stays active until it expires. Contact support to cancel early."
+        className="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-semibold text-text-secondary"
+      >
+        Contact support to cancel
+      </button>
+    );
+  }
+
+  let label: string;
+  if (cardPlan === "pro") {
     label = "Upgrade to Pro";
   } else if (cardPlan === "max") {
     label = userPlan === "pro" ? "Upgrade to Max" : "Go Max";

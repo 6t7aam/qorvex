@@ -14,8 +14,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { PLANS } from "@/lib/constants";
 import { PlanCTAButton } from "@/components/billing/PlanCTAButton";
-import { ManageBillingButton } from "@/components/billing/ManageBillingButton";
-import { CheckoutSuccessSync } from "@/components/billing/CheckoutSuccessSync";
 import { createPrivatePageMetadata } from "@/lib/seo";
 import type {
   ManualPayment,
@@ -102,12 +100,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     | "pro"
     | "max"
     | null;
-  const paidPlanActive =
-    plan !== "free" &&
-    (subscription?.status === "active" ||
-      subscription?.status === "trialing");
-  const checkoutSucceeded = params.success === "true";
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <Link
@@ -167,12 +159,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         </div>
       )}
 
-      {checkoutSucceeded && params.session_id ? (
-        <CheckoutSuccessSync
-          sessionId={params.session_id}
-          webhookSynced={paidPlanActive}
-        />
-      ) : null}
       {params.canceled && (
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-200">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -315,7 +301,6 @@ function CurrentPlanCard({
                 {formatDate(subscription.current_period_end)}.
               </div>
             )}
-            <ManageBillingButton />
           </>
         )}
       </div>
@@ -449,10 +434,6 @@ function BillingHistory({
           </table>
         </div>
       )}
-
-      <div className="mt-4">
-        <ManageBillingButton variant="link" />
-      </div>
     </section>
   );
 }

@@ -132,8 +132,9 @@ export default function TermsPage() {
               <p>
                 Refunds are handled case-by-case and generally available within
                 7 days of the original charge for first-time subscribers.
-                Payment processing is handled by our payment partners (e.g.,
-                Stripe); their own terms apply.
+                Crypto payments are processed by NOWPayments; card payments are
+                verified manually by our team. Their own terms apply where
+                relevant.
               </p>
             </>
           ),
@@ -143,7 +144,7 @@ export default function TermsPage() {
           body: (
             <p>
               Qorvex integrates with third-party services such as Supabase,
-              Stripe, GitHub, and our AI infrastructure providers. Your use of
+              NOWPayments, GitHub, and our AI infrastructure providers. Your use of
               those services is also governed by their respective terms and
               privacy policies. We are not responsible for the practices of
               third parties.

@@ -43,7 +43,9 @@ export default function PrivacyPage() {
                 <strong className="text-white">Account information.</strong>{" "}
                 When you sign up, we collect your email address, full name (if
                 provided), authentication identifiers, and — for paid plans —
-                billing details processed by Stripe.
+                payment details (crypto transactions via NOWPayments, or the
+                bank-transfer screenshot you upload for manual card
+                verification).
               </p>
               <p>
                 <strong className="text-white">Content you submit.</strong> The
@@ -93,7 +95,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="ml-5 list-disc space-y-1">
                 <li><strong className="text-white">Supabase</strong> — authentication and primary database for accounts, projects, and credits.</li>
-                <li><strong className="text-white">Stripe</strong> — payment processing and subscription management.</li>
+                <li><strong className="text-white">NOWPayments</strong> — crypto payment processing for subscriptions.</li>
                 <li><strong className="text-white">Vercel</strong> — application hosting, edge functions, and CDN delivery.</li>
                 <li><strong className="text-white">AI infrastructure providers</strong> — to perform code generation. Prompts are processed in transit and not used to train third-party foundation models on your behalf.</li>
                 <li><strong className="text-white">GitHub</strong> — only when you explicitly connect a repository for export.</li>
