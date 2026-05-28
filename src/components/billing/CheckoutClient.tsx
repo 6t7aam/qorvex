@@ -19,6 +19,8 @@ import {
   type NowPaymentsPlan,
   type NowPaymentsPlanKey,
 } from "@/lib/nowpayments/config";
+import { planRank } from "@/lib/plans";
+import type { Plan } from "@/types";
 
 type Method = "crypto" | "card";
 
@@ -27,6 +29,7 @@ interface CheckoutClientProps {
   plans: Record<NowPaymentsPlanKey, NowPaymentsPlan>;
   userId: string;
   userEmail: string | null;
+  currentPlan: Plan;
 }
 
 export function CheckoutClient({
@@ -34,9 +37,21 @@ export function CheckoutClient({
   plans,
   userId,
   userEmail,
+  currentPlan,
 }: CheckoutClientProps) {
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState<NowPaymentsPlanKey>(initialPlan);
+
+  // Only plans strictly above the user's current tier can be purchased — you
+  // cannot buy the plan you already have, nor "downgrade" by paying.
+  const upgradeablePlans = (Object.keys(plans) as NowPaymentsPlanKey[]).filter(
+    (key) => planRank(key) > planRank(currentPlan),
+  );
+
+  const [selectedPlan, setSelectedPlan] = useState<NowPaymentsPlanKey>(
+    upgradeablePlans.includes(initialPlan)
+      ? initialPlan
+      : (upgradeablePlans[0] ?? initialPlan),
+  );
   const [method, setMethod] = useState<Method>("crypto");
   const [currency, setCurrency] = useState<string>(PAY_CURRENCIES[0].code);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +61,10 @@ export function CheckoutClient({
   const plan = plans[selectedPlan];
   const selectedCurrency =
     PAY_CURRENCIES.find((c) => c.code === currency) ?? PAY_CURRENCIES[0];
+
+  if (upgradeablePlans.length === 0) {
+    return <AlreadyOnTopPlan currentPlan={currentPlan} />;
+  }
 
   async function handlePay() {
     setError(null);
@@ -113,6 +132,7 @@ export function CheckoutClient({
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
         <OrderSummary
           plans={plans}
+          planKeys={upgradeablePlans}
           selectedPlan={selectedPlan}
           onSelectPlan={setSelectedPlan}
         />
@@ -168,6 +188,36 @@ export function CheckoutClient({
   );
 }
 
+function AlreadyOnTopPlan({ currentPlan }: { currentPlan: Plan }) {
+  const planName = currentPlan === "max" ? "Max" : "Pro";
+
+  return (
+    <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
+      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-600 to-cyan-500 shadow-lg shadow-violet-500/30">
+        <CheckCircle2 className="h-10 w-10 text-white" />
+      </div>
+
+      <h1 className="mt-8 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        You&apos;re already on {planName}
+      </h1>
+      <p className="mt-3 max-w-md text-sm text-text-secondary">
+        Your account already has the highest plan available, so there is nothing
+        to upgrade. To change or cancel your plan, contact support.
+      </p>
+
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <Link
+          href="/billing"
+          className="gradient-bg inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to billing
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function CardInfoCard({ amountUsd }: { amountUsd: number }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-background-secondary/40 p-5">
@@ -206,10 +256,12 @@ function CardInfoCard({ amountUsd }: { amountUsd: number }) {
 
 function OrderSummary({
   plans,
+  planKeys,
   selectedPlan,
   onSelectPlan,
 }: {
   plans: Record<NowPaymentsPlanKey, NowPaymentsPlan>;
+  planKeys: NowPaymentsPlanKey[];
   selectedPlan: NowPaymentsPlanKey;
   onSelectPlan: (plan: NowPaymentsPlanKey) => void;
 }) {
@@ -222,7 +274,7 @@ function OrderSummary({
       </div>
 
       <div className="mt-5 space-y-2">
-        {(Object.keys(plans) as NowPaymentsPlanKey[]).map((key) => {
+        {planKeys.map((key) => {
           const p = plans[key];
           const active = key === selectedPlan;
           return (

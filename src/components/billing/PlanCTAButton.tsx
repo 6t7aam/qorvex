@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { planRank } from "@/lib/plans";
 import type { Plan } from "@/types";
 
 type CardPlan = "free" | "pro" | "max";
@@ -27,8 +28,8 @@ export function PlanCTAButton({
   const [pending, setPending] = useState(false);
 
   const isCurrent = cardPlan === userPlan;
-  const isDowngrade = cardPlan === "free" && userPlan !== "free";
-  const isPaidUpgrade = cardPlan !== "free" && cardPlan !== userPlan;
+  const isDowngrade = planRank(cardPlan) < planRank(userPlan);
+  const isPaidUpgrade = planRank(cardPlan) > planRank(userPlan);
   const hasPendingForThisCard =
     isPaidUpgrade && pendingPlan === cardPlan;
 
