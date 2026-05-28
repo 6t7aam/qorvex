@@ -11,7 +11,8 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveActivePlan } from "@/lib/subscription.server";
 import { PLANS } from "@/lib/constants";
 import { PlanCTAButton } from "@/components/billing/PlanCTAButton";
 import { createPrivatePageMetadata } from "@/lib/seo";
@@ -95,7 +96,11 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     }
   }
 
-  const plan: Plan = profile?.plan ?? "free";
+  let plan: Plan = profile?.plan ?? "free";
+  if (userId && plan !== "free") {
+    const admin = createAdminClient();
+    plan = await resolveActivePlan(admin, userId, plan, { admin });
+  }
   const pendingPlan = (profile?.pending_plan ?? pendingPayment?.plan ?? null) as
     | "pro"
     | "max"

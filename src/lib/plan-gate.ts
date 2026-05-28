@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveActivePlan } from "@/lib/subscription.server";
 import { isPaidPlan } from "@/lib/plans";
 import type { Plan } from "@/types";
 
@@ -42,7 +43,10 @@ export async function requirePaidPlan(): Promise<GateSuccess | GateFailure> {
     .eq("id", user.id)
     .maybeSingle<{ plan: Plan | null }>();
 
-  const plan: Plan = (profile?.plan as Plan | null | undefined) ?? "free";
+  const storedPlan: Plan = (profile?.plan as Plan | null | undefined) ?? "free";
+  const plan: Plan = await resolveActivePlan(supabase, user.id, storedPlan, {
+    admin: createAdminClient(),
+  });
 
   if (!isPaidPlan(plan)) {
     return {

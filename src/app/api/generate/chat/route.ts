@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAIProvider, type AIProvider } from "@/lib/ai";
 import { beginAIUsageSession } from "@/lib/ai-usage.server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveActivePlan } from "@/lib/subscription.server";
 import { withTimeout } from "@/lib/with-timeout";
 import {
   getProjectPreviewModel,
@@ -444,6 +445,10 @@ export async function POST(request: NextRequest) {
   if (!profileData) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
+
+  profileData.plan = await resolveActivePlan(admin, user.id, profileData.plan, {
+    admin,
+  });
 
   let project: Project | null = null;
   let files: Record<string, string> = body.currentFiles ?? {};

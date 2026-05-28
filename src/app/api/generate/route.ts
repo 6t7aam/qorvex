@@ -13,6 +13,7 @@ import {
   getPlanDailyCreditLimit,
 } from "@/lib/ai-credits";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { resolveActivePlan } from "@/lib/subscription.server";
 import { executeGenerationPipeline } from "@/lib/generation-pipeline";
 import { getClientIP, hashIP } from "@/lib/ip-hash";
 import type { Project, UserProfile } from "@/types";
@@ -148,6 +149,12 @@ export async function POST(request: NextRequest) {
     "Untitled app";
 
   const admin = createAdminClient();
+
+  // Drop expired manual/crypto subscriptions back to free before charging.
+  profileData.plan = await resolveActivePlan(admin, user.id, profileData.plan, {
+    admin,
+  });
+
   const provider = getAIProvider();
   const requestId =
     typeof body.requestId === "string" && body.requestId.trim()
