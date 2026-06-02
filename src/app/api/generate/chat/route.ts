@@ -37,6 +37,34 @@ interface EditResponsePayload {
   updatedFiles?: Record<string, string>;
 }
 
+function buildEditResponseSchema(includeFiles: boolean) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      message: { type: "string" },
+      versionSummary: { type: "string" },
+      updatedPreview: {
+        type: "object",
+        additionalProperties: true,
+      },
+      ...(includeFiles
+        ? {
+            updatedFiles: {
+              type: "object",
+              additionalProperties: {
+                type: "string",
+              },
+            },
+          }
+        : {}),
+    },
+    required: includeFiles
+      ? ["message", "versionSummary", "updatedPreview", "updatedFiles"]
+      : ["message", "versionSummary", "updatedPreview"],
+  };
+}
+
 const HEAVY_EDIT_SYSTEM_PROMPT = `You are Qorvex, the AI editor for an already-generated React Native Expo app.
 Return one strict JSON object only:
 {
@@ -82,10 +110,14 @@ Return one strict JSON object only:
 
 Rules:
 - Make targeted edits only. Do not regenerate the whole app unless the request clearly requires it.
+- Think like a senior product designer and Expo engineer. Improve UX quality, information density, and implementation clarity together.
 - Keep responses compact and deterministic.
 - Only include files that changed.
 - Keep file contents complete, not diffs.
 - Use updatedPreview when screens, layout, navigation, styling, or sample data change.
+- Prefer app-specific improvements over generic polish language.
+- Preserve the strongest existing ideas unless the user explicitly replaces them.
+- If the request is ambiguous, make the most useful premium-product assumption instead of refusing.
 - No markdown, no code fences, no commentary outside JSON.`;
 
 const LIGHTWEIGHT_EDIT_SYSTEM_PROMPT = `You are Qorvex, the AI editor for a React Native Expo app.
@@ -112,6 +144,7 @@ Return one strict JSON object only:
 
 Rules:
 - Do NOT touch project files. Use updatedPreview only.
+- Behave like a strong mobile product designer: sharpen hierarchy, improve utility, and make the result feel more premium.
 - Theme color fields MUST be plain CSS color strings. Never objects or
   multi-word values. "light blue" must be written as "#ADD8E6" or
   "lightblue" (no space). When the user names a color, output a real hex
@@ -121,12 +154,14 @@ Rules:
   color and write a different one.
 - Only include the preview fields you actually changed; omitted fields
   keep their previous value.
+- Push for stronger UX decisions: better titles, clearer sections, denser content, better action labels.
 - Keep the response under ~400 tokens.
 - No markdown, no code fences, no commentary outside JSON.`;
 
 const SIMPLE_CHAT_SYSTEM_PROMPT = `You are Qorvex, a friendly AI editor for a React Native Expo app.
 Reply in the same language the user wrote in. Be concise (1-3 sentences).
 Do NOT return JSON. Do NOT propose code changes unless the user explicitly asks for one.
+When useful, include one concrete next-step suggestion grounded in the current project.
 If asked who you are, say you are Qorvex, the AI editor for their React Native Expo app, and offer one example of what they can ask next.`;
 
 const SIMPLE_CHAT_PATTERNS: RegExp[] = [
@@ -225,12 +260,12 @@ function pickRelevantFiles(message: string, files: Record<string, string>) {
   const relevant = scored
     .filter((item) => item.score > 0)
     .sort((left, right) => right.score - left.score)
-    .slice(0, 6)
+    .slice(0, 8)
     .map((item) => item.path);
 
   if (relevant.length > 0) return relevant;
 
-  return visibleFiles.slice(0, 6);
+  return visibleFiles.slice(0, 8);
 }
 
 function summarizeFiles(files: Record<string, string>) {
@@ -336,6 +371,12 @@ User edit request: ${message}
 Current preview summary:
 ${extractPreviewSummary(context.preview)}
 
+Current app components:
+${context.preview.components.join(", ") || "(none listed)"}
+
+Current sample data:
+${truncate(JSON.stringify(context.preview.sampleData, null, 2), 1200)}
+
 Recent edit history:
 ${recentHistory || "(no previous edits yet)"}`;
 }
@@ -368,6 +409,9 @@ ${summarizeFiles(context.files)}
 
 Relevant file snippets:
 ${buildSnippets(message, context.files)}
+
+Current preview JSON:
+${truncate(JSON.stringify(context.preview, null, 2), 2200)}
 
 Recent edit history:
 ${recentHistory || "(no previous edits yet)"}`;
@@ -673,6 +717,8 @@ export async function POST(request: NextRequest) {
         maxTokens,
         temperature: 0.2,
         thinkingBudget: intent === "heavy_edit" ? 4096 : 1024,
+        responseMimeType: "application/json",
+        responseSchema: buildEditResponseSchema(isHeavy),
       }),
       timeoutMs,
       timeoutMessage,

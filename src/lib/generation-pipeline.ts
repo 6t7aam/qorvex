@@ -100,6 +100,191 @@ const MAX_SCREEN_COUNT = 6;
 const MAX_TABS = 5;
 const DEFAULT_APP_BACKGROUND = "#05070f";
 
+function stringArraySchema(minItems = 0, maxItems = 12) {
+  return {
+    type: "array",
+    items: { type: "string" },
+    minItems,
+    maxItems,
+  };
+}
+
+function screenSectionSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      type: {
+        type: "string",
+        enum: ["hero", "stats", "list", "chart", "actions", "empty"],
+      },
+      title: { type: "string" },
+      body: { type: "string" },
+      value: { type: "string" },
+      cta: { type: "string" },
+      items: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: true,
+          properties: {
+            label: { type: "string" },
+            value: {
+              type: ["string", "number"],
+            },
+          },
+        },
+      },
+    },
+    required: ["type", "title"],
+  };
+}
+
+function appPlanSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      appName: { type: "string" },
+      description: { type: "string" },
+      theme: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          primary: { type: "string" },
+          secondary: { type: "string" },
+          accent: { type: "string" },
+          background: { type: "string" },
+        },
+        required: ["primary", "secondary", "accent", "background"],
+      },
+      navigation: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          type: {
+            type: "string",
+            enum: ["tabs", "stack", "mixed"],
+          },
+          tabs: stringArraySchema(2, MAX_TABS),
+        },
+        required: ["type", "tabs"],
+      },
+      screens: {
+        type: "array",
+        minItems: 4,
+        maxItems: MAX_SCREEN_COUNT,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            id: { type: "string" },
+            title: { type: "string" },
+            purpose: { type: "string" },
+            route: { type: "string" },
+            tabLabel: { type: "string" },
+            icon: { type: "string" },
+          },
+          required: ["id", "title", "purpose", "route", "tabLabel", "icon"],
+        },
+      },
+      features: stringArraySchema(3, MAX_FEATURES),
+      entities: stringArraySchema(2, MAX_ENTITY_COUNT),
+      sampleData: {
+        type: "object",
+        additionalProperties: true,
+      },
+      architecture: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          routing: { type: "string" },
+          styling: { type: "string" },
+          backend: { type: "string" },
+          state: { type: "string" },
+        },
+        required: ["routing", "styling", "backend", "state"],
+      },
+    },
+    required: [
+      "appName",
+      "description",
+      "theme",
+      "navigation",
+      "screens",
+      "features",
+      "entities",
+      "sampleData",
+      "architecture",
+    ],
+  };
+}
+
+function screenSpecsSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      screens: {
+        type: "array",
+        minItems: 4,
+        maxItems: MAX_SCREEN_COUNT,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            id: { type: "string" },
+            title: { type: "string" },
+            subtitle: { type: "string" },
+            route: { type: "string" },
+            tabLabel: { type: "string" },
+            icon: { type: "string" },
+            primaryActions: stringArraySchema(2, 5),
+            loadingState: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: { type: "string" },
+                body: { type: "string" },
+              },
+              required: ["title", "body"],
+            },
+            emptyState: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: { type: "string" },
+                body: { type: "string" },
+                cta: { type: "string" },
+              },
+              required: ["title", "body", "cta"],
+            },
+            sections: {
+              type: "array",
+              minItems: 3,
+              maxItems: 5,
+              items: screenSectionSchema(),
+            },
+          },
+          required: [
+            "id",
+            "title",
+            "subtitle",
+            "route",
+            "tabLabel",
+            "icon",
+            "primaryActions",
+            "loadingState",
+            "emptyState",
+            "sections",
+          ],
+        },
+      },
+    },
+    required: ["screens"],
+  };
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -790,8 +975,10 @@ function buildFileManifest(screens: ScreenSpec[]): FileManifestEntry[] {
     { path: "tsconfig.json", kind: "config", purpose: "TypeScript configuration" },
     { path: "app/_layout.tsx", kind: "layout", purpose: "Root stack layout" },
     { path: "app/(tabs)/_layout.tsx", kind: "layout", purpose: "Tab navigation layout" },
+    { path: "components/app-shell/AppShellHeader.tsx", kind: "component", purpose: "Premium screen header" },
     { path: "components/app-shell/ScreenRenderer.tsx", kind: "component", purpose: "Data-driven screen renderer" },
     { path: "components/app-shell/SectionBlock.tsx", kind: "component", purpose: "Reusable preview section renderer" },
+    { path: "components/app-shell/SectionListRow.tsx", kind: "component", purpose: "Reusable list row" },
     { path: "components/app-shell/StatPill.tsx", kind: "component", purpose: "Small metric component" },
     { path: "lib/app-plan.ts", kind: "lib", purpose: "Structured app plan and screen metadata" },
     { path: "lib/theme.ts", kind: "lib", purpose: "Theme tokens for the generated app" },
@@ -870,10 +1057,12 @@ function buildPackageJson() {
       },
       dependencies: {
         expo: "~53.0.0",
+        "expo-linear-gradient": "~14.0.0",
         "expo-router": "~5.0.0",
         "expo-status-bar": "~2.0.0",
         react: "19.0.0",
         "react-native": "0.79.0",
+        "react-native-safe-area-context": "5.4.0",
         "@expo/vector-icons": "^14.0.0",
         "@supabase/supabase-js": "^2.49.0",
       },
@@ -905,12 +1094,16 @@ function buildTsConfig() {
 
 function buildRootLayout() {
   return `import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
 export default function RootLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <>
+      <StatusBar style="light" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </>
   );
 }
 `;
@@ -945,8 +1138,16 @@ export default function TabsLayout() {
         tabBarActiveTintColor: APP_THEME.primary,
         tabBarInactiveTintColor: "#94a3b8",
         tabBarStyle: {
-          backgroundColor: "#08101d",
+          position: "absolute",
+          height: 74,
+          paddingTop: 8,
+          paddingBottom: 10,
+          backgroundColor: "rgba(8, 16, 29, 0.96)",
           borderTopColor: "rgba(148, 163, 184, 0.18)",
+          borderTopWidth: 1,
+        },
+        sceneStyle: {
+          backgroundColor: APP_THEME.background,
         },
       }}
     >
@@ -959,6 +1160,17 @@ ${entries}
 
 function buildTheme(plan: AppPlan) {
   return `export const APP_THEME = ${JSON.stringify(plan.theme, null, 2)} as const;
+
+export function withAlpha(hex: string, alpha: number) {
+  const normalized = hex.replace("#", "");
+  if (normalized.length !== 6) return hex;
+
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+
+  return \`rgba(\${red}, \${green}, \${blue}, \${Math.max(0, Math.min(1, alpha))})\`;
+}
 `;
 }
 
@@ -986,10 +1198,88 @@ export function getScreenSpec(id: string) {
 `;
 }
 
+function buildAppShellHeader() {
+  return `import { LinearGradient } from "expo-linear-gradient";
+import { Text, View } from "react-native";
+import { APP_THEME, withAlpha } from "@/lib/theme";
+
+export function AppShellHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle: string;
+  actions: string[];
+}) {
+  return (
+    <LinearGradient
+      colors={[
+        withAlpha(APP_THEME.primary, 0.34),
+        withAlpha(APP_THEME.secondary, 0.18),
+        "rgba(9, 14, 24, 0.96)",
+      ]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        borderRadius: 28,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.08)",
+        overflow: "hidden",
+        gap: 14,
+      }}
+    >
+      <View
+        style={{
+          position: "absolute",
+          right: -28,
+          top: -20,
+          width: 140,
+          height: 140,
+          borderRadius: 999,
+          backgroundColor: withAlpha(APP_THEME.accent, 0.16),
+        }}
+      />
+
+      <View style={{ gap: 8 }}>
+        <Text style={{ color: "white", fontSize: 30, fontWeight: "800", letterSpacing: -0.8 }}>
+          {title}
+        </Text>
+        <Text style={{ color: "#d7e0ee", fontSize: 15, lineHeight: 22 }}>
+          {subtitle}
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        {actions.map((action) => (
+          <View
+            key={action}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              borderRadius: 999,
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.1)",
+            }}
+          >
+            <Text style={{ color: "white", fontWeight: "700", fontSize: 13 }}>{action}</Text>
+          </View>
+        ))}
+      </View>
+    </LinearGradient>
+  );
+}
+`;
+}
+
 function buildScreenRenderer() {
   return `import { ScrollView, Text, View } from "react-native";
-import { APP_THEME } from "@/lib/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { AppShellHeader } from "@/components/app-shell/AppShellHeader";
 import { SectionBlock } from "@/components/app-shell/SectionBlock";
+import { APP_THEME, withAlpha } from "@/lib/theme";
 
 interface ScreenSpec {
   id: string;
@@ -1010,69 +1300,140 @@ interface ScreenSpec {
 
 export function ScreenRenderer({ screen }: { screen: ScreenSpec }) {
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: APP_THEME.background }}
-      contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 36 }}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: APP_THEME.background }}>
       <View
         style={{
-          borderRadius: 24,
-          padding: 18,
-          backgroundColor: "rgba(15, 23, 42, 0.86)",
-          borderWidth: 1,
-          borderColor: "rgba(148, 163, 184, 0.18)",
-          gap: 8,
+          position: "absolute",
+          left: -40,
+          top: 80,
+          width: 180,
+          height: 180,
+          borderRadius: 999,
+          backgroundColor: withAlpha(APP_THEME.primary, 0.1),
         }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          right: -36,
+          top: 210,
+          width: 160,
+          height: 160,
+          borderRadius: 999,
+          backgroundColor: withAlpha(APP_THEME.secondary, 0.08),
+        }}
+      />
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: "white", fontSize: 28, fontWeight: "700" }}>
-          {screen.title}
-        </Text>
-        <Text style={{ color: "#cbd5e1", fontSize: 15, lineHeight: 22 }}>
-          {screen.subtitle}
-        </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-          {screen.primaryActions.map((action) => (
-            <View
-              key={action}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 999,
-                backgroundColor: APP_THEME.primary,
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "600" }}>{action}</Text>
-            </View>
-          ))}
+        <AppShellHeader
+          title={screen.title}
+          subtitle={screen.subtitle}
+          actions={screen.primaryActions}
+        />
+
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 12,
+          }}
+        >
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 20,
+              padding: 14,
+              backgroundColor: "rgba(12, 18, 30, 0.88)",
+              borderWidth: 1,
+              borderColor: "rgba(148, 163, 184, 0.12)",
+              gap: 4,
+            }}
+          >
+            <Text style={{ color: "#8ea4bf", fontSize: 12, textTransform: "uppercase" }}>
+              Live state
+            </Text>
+            <Text style={{ color: "white", fontSize: 16, fontWeight: "700" }}>
+              {screen.loadingState.title}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flex: 1,
+              borderRadius: 20,
+              padding: 14,
+              backgroundColor: "rgba(12, 18, 30, 0.88)",
+              borderWidth: 1,
+              borderColor: "rgba(148, 163, 184, 0.12)",
+              gap: 4,
+            }}
+          >
+            <Text style={{ color: "#8ea4bf", fontSize: 12, textTransform: "uppercase" }}>
+              Next best action
+            </Text>
+            <Text style={{ color: "white", fontSize: 16, fontWeight: "700" }}>
+              {screen.emptyState.cta}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {screen.sections.map((section) => (
-        <SectionBlock key={section.title} section={section} />
-      ))}
+        {screen.sections.map((section) => (
+          <SectionBlock key={section.title} section={section} />
+        ))}
 
-      <View
-        style={{
-          borderRadius: 20,
-          padding: 16,
-          backgroundColor: "rgba(12, 20, 36, 0.82)",
-          borderWidth: 1,
-          borderColor: "rgba(96, 165, 250, 0.2)",
-          gap: 6,
-        }}
-      >
-        <Text style={{ color: "#f8fafc", fontSize: 16, fontWeight: "700" }}>
-          {screen.emptyState.title}
-        </Text>
-        <Text style={{ color: "#cbd5e1", lineHeight: 20 }}>
-          {screen.emptyState.body}
-        </Text>
-        <Text style={{ color: APP_THEME.accent, fontWeight: "600" }}>
-          {screen.emptyState.cta}
-        </Text>
-      </View>
-    </ScrollView>
+        <View
+          style={{
+            borderRadius: 22,
+            padding: 18,
+            backgroundColor: "rgba(12, 20, 36, 0.82)",
+            borderWidth: 1,
+            borderColor: withAlpha(APP_THEME.accent, 0.3),
+            gap: 8,
+          }}
+        >
+          <Text style={{ color: "#f8fafc", fontSize: 16, fontWeight: "700" }}>
+            {screen.emptyState.title}
+          </Text>
+          <Text style={{ color: "#cbd5e1", lineHeight: 20 }}>
+            {screen.emptyState.body}
+          </Text>
+          <Text style={{ color: APP_THEME.accent, fontWeight: "700" }}>
+            {screen.emptyState.cta}
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+`;
+}
+
+function buildSectionListRow() {
+  return `import { Text, View } from "react-native";
+
+export function SectionListRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 12,
+        gap: 16,
+      }}
+    >
+      <Text style={{ flex: 1, color: "#f8fafc", fontWeight: "600" }}>{label}</Text>
+      <Text style={{ color: "#9fb0c5", textAlign: "right" }}>{value}</Text>
+    </View>
   );
 }
 `;
@@ -1080,8 +1441,9 @@ export function ScreenRenderer({ screen }: { screen: ScreenSpec }) {
 
 function buildSectionBlock() {
   return `import { Text, View } from "react-native";
-import { APP_THEME } from "@/lib/theme";
+import { SectionListRow } from "@/components/app-shell/SectionListRow";
 import { StatPill } from "@/components/app-shell/StatPill";
+import { APP_THEME, withAlpha } from "@/lib/theme";
 
 interface Section {
   type: "hero" | "stats" | "list" | "chart" | "actions" | "empty";
@@ -1116,15 +1478,20 @@ function renderChart(items: Array<Record<string, string | number>> = []) {
 
 export function SectionBlock({ section }: { section: Section }) {
   const items = section.items ?? [];
+  const isHero = section.type === "hero";
 
   return (
     <View
       style={{
-        borderRadius: 22,
-        padding: 16,
-        backgroundColor: "rgba(15, 23, 42, 0.74)",
+        borderRadius: isHero ? 26 : 22,
+        padding: isHero ? 18 : 16,
+        backgroundColor: isHero
+          ? withAlpha(APP_THEME.primary, 0.16)
+          : "rgba(15, 23, 42, 0.74)",
         borderWidth: 1,
-        borderColor: "rgba(148, 163, 184, 0.14)",
+        borderColor: isHero
+          ? withAlpha(APP_THEME.primary, 0.24)
+          : "rgba(148, 163, 184, 0.14)",
         gap: 10,
       }}
     >
@@ -1155,15 +1522,14 @@ export function SectionBlock({ section }: { section: Section }) {
             <View
               key={\`\${item.label ?? "row"}-\${index}\`}
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                paddingVertical: 12,
                 borderBottomWidth: index === items.length - 1 ? 0 : 1,
                 borderBottomColor: "rgba(148, 163, 184, 0.12)",
               }}
             >
-              <Text style={{ color: "#f8fafc", fontWeight: "600" }}>{String(item.label ?? "Item")}</Text>
-              <Text style={{ color: "#94a3b8" }}>{String(item.value ?? "")}</Text>
+              <SectionListRow
+                label={String(item.label ?? "Item")}
+                value={String(item.value ?? "")}
+              />
             </View>
           ))}
         </View>
@@ -1242,11 +1608,17 @@ function buildFilesFromManifest(
       case "app/(tabs)/_layout.tsx":
         files[entry.path] = buildTabsLayout(plan, screens);
         break;
+      case "components/app-shell/AppShellHeader.tsx":
+        files[entry.path] = buildAppShellHeader();
+        break;
       case "components/app-shell/ScreenRenderer.tsx":
         files[entry.path] = buildScreenRenderer();
         break;
       case "components/app-shell/SectionBlock.tsx":
         files[entry.path] = buildSectionBlock();
+        break;
+      case "components/app-shell/SectionListRow.tsx":
+        files[entry.path] = buildSectionListRow();
         break;
       case "components/app-shell/StatPill.tsx":
         files[entry.path] = buildStatPill();
@@ -1286,13 +1658,15 @@ function buildPreview(plan: AppPlan, screens: ScreenSpec[]): ProjectPreviewModel
     description: plan.description,
     theme: plan.theme,
     navigation: {
-      type: "tabs",
+      type: plan.navigation.type,
       tabs: screens.slice(0, MAX_TABS).map((screen) => screen.tabLabel),
     },
     screens: previewScreens,
     components: [
+      "AppShellHeader",
       "ScreenRenderer",
       "SectionBlock",
+      "SectionListRow",
       "StatPill",
       "Tab navigation",
     ],
@@ -1310,6 +1684,7 @@ async function runStructuredStage<T>({
   prompt,
   maxTokens,
   thinkingBudget,
+  responseSchema,
   fallback,
   normalize,
   warnings,
@@ -1321,6 +1696,7 @@ async function runStructuredStage<T>({
   prompt: string;
   maxTokens: number;
   thinkingBudget?: number;
+  responseSchema?: Record<string, unknown>;
   fallback: T;
   normalize: (value: unknown, fallback: T) => T;
   warnings: string[];
@@ -1367,6 +1743,8 @@ Retry requirements:
           maxTokens,
           temperature: attempt === 1 ? 0.15 : 0.1,
           thinkingBudget,
+          responseMimeType: "application/json",
+          responseSchema,
         }),
         45000,
         `${stageName} timed out before the AI response completed.`,
@@ -1392,7 +1770,7 @@ function buildPlanPrompt(input: GenerationPipelineInput) {
 
   return {
     systemPrompt:
-      "You are a principal product designer and Expo architect planning a premium, production-quality mobile app. Be concrete, app-specific, and commercially polished. Respond with one compact JSON object only.",
+      "You are a principal product designer, staff mobile PM, and Expo architect creating launch-ready app plans. Think in terms of product value, retention loops, dense but clear UX, realistic entities, and differentiated mobile interactions. Avoid demo-ware. Respond with one valid JSON object only.",
     prompt: `Create an app plan JSON.
 appName: ${input.projectName}
 platform: ${input.platform}
@@ -1416,13 +1794,17 @@ Return JSON:
 
 Rules:
 - 4 to 6 screens
+- include one clear primary workflow, one supporting workflow, and one retention/return loop
 - specific to the app idea
 - include auth or onboarding when relevant
 - include profile or settings
+- include at least one screen that feels operational, data-rich, or action-oriented
 - tabs should be concise
 - use a near-black app background by default
 - avoid generic filler such as repeated 'Welcome' dashboards unless the product truly needs it
 - prefer differentiated flows, clear user value, and realistic product entities
+- feature names should sound shippable, not aspirational
+- sampleData should contain domain-realistic nouns, labels, and seed values
 - make the information architecture feel like a launch-ready app, not a demo
 - no markdown`,
   };
@@ -1431,7 +1813,7 @@ Rules:
 function buildScreenPrompt(plan: AppPlan) {
   return {
     systemPrompt:
-      "You convert mobile app plans into rich, premium screen specs for a high-end Expo product. Make the screens feel purposeful, dense, and app-specific rather than generic. Respond with one compact JSON object only.",
+      "You convert app plans into rich, premium mobile screen specs for a high-end Expo product. Make each screen useful on first open, visually intentional, and materially different from the others. Favor practical product depth over chrome. Respond with one valid JSON object only.",
     prompt: `Expand this plan into detailed screen specs.
 plan: ${JSON.stringify({
       appName: plan.appName,
@@ -1478,6 +1860,9 @@ Rules:
 - the home screen should feel immediately useful, not like placeholder marketing copy
 - vary section structure between screens; avoid cloning the same card pattern everywhere
 - include specific metrics, lists, CTAs, and microcopy that match the app domain
+- at least one section per screen should contain a concrete user decision, next action, or prioritization cue
+- hero sections should feel editorial and premium, not like empty dashboard filler
+- avoid vague subtitles such as "manage everything in one place"
 - prefer practical depth over decorative filler
 - no markdown`,
   };
@@ -1538,6 +1923,7 @@ export async function executeGenerationPipeline(
     prompt: planPrompt.prompt,
     maxTokens: 2800,
     thinkingBudget: 4096,
+    responseSchema: appPlanSchema(),
     fallback: fallbackPlan,
     normalize: normalizePlan,
     warnings,
@@ -1562,6 +1948,7 @@ export async function executeGenerationPipeline(
     prompt: screenPrompt.prompt,
     maxTokens: 4800,
     thinkingBudget: 8192,
+    responseSchema: screenSpecsSchema(),
     fallback: screenFallback,
     normalize: normalizeScreenSpecs,
     warnings,

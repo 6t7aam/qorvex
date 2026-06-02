@@ -13,12 +13,12 @@ import {
 type ChatMessage = ProjectChatHistoryMessage;
 
 const SUGGESTIONS = [
-  "Add login and signup screens",
-  "Make the UI more premium",
-  "Add seller chat",
-  "Improve marketplace listings",
-  "Add profile settings",
-  "Add onboarding screens",
+  "Make the UI feel more premium and product-specific",
+  "Add onboarding with clearer activation steps",
+  "Add login, signup, and a stronger profile flow",
+  "Improve the main dashboard with richer data and actions",
+  "Add a more useful detail screen for the core workflow",
+  "Tighten the copy and make the app feel more polished",
 ];
 
 interface AIChatProps {
@@ -342,7 +342,7 @@ export function AIChat({
                 void send(input);
               }
             }}
-            placeholder="Describe what you want to change..."
+            placeholder="Describe the product, UX, or code change you want..."
             rows={1}
             disabled={sending}
             className="block max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-white placeholder:text-text-muted focus:outline-none disabled:opacity-60"
@@ -459,7 +459,7 @@ ${featuresText}
 Good next edits
 ${suggestionsText}
 
-Describe the change you want and I will update the project for you.`;
+Ask for product changes, UI polish, stronger flows, or targeted code edits and I will update the project for you.`;
 }
 
 function extractAppName(files: Record<string, string>, fallback?: string): string {

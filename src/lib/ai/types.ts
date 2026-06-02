@@ -14,6 +14,8 @@ export interface AITextGenerationOptions {
   maxTokens?: number;
   temperature?: number;
   thinkingBudget?: number;
+  responseMimeType?: "text/plain" | "application/json";
+  responseSchema?: Record<string, unknown>;
 }
 
 export interface AITextGenerationResult {

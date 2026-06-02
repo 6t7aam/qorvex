@@ -103,7 +103,7 @@ export class GeminiProvider implements AIProvider {
           "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
-          system_instruction: {
+          systemInstruction: {
             parts: [{ text: options.systemPrompt }],
           },
           contents: [
@@ -112,9 +112,15 @@ export class GeminiProvider implements AIProvider {
               parts: [{ text: options.prompt }],
             },
           ],
+          store: false,
           generationConfig: {
             temperature: options.temperature ?? 0.2,
             maxOutputTokens: options.maxTokens ?? 8000,
+            responseMimeType: options.responseMimeType,
+            responseJsonSchema:
+              options.responseMimeType === "application/json"
+                ? options.responseSchema
+                : undefined,
             thinkingConfig:
               normalizeThinkingBudget(options.thinkingBudget) !== undefined
                 ? {
