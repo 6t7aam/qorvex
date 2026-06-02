@@ -37,34 +37,6 @@ interface EditResponsePayload {
   updatedFiles?: Record<string, string>;
 }
 
-function buildEditResponseSchema(includeFiles: boolean) {
-  return {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      message: { type: "string" },
-      versionSummary: { type: "string" },
-      updatedPreview: {
-        type: "object",
-        additionalProperties: true,
-      },
-      ...(includeFiles
-        ? {
-            updatedFiles: {
-              type: "object",
-              additionalProperties: {
-                type: "string",
-              },
-            },
-          }
-        : {}),
-    },
-    required: includeFiles
-      ? ["message", "versionSummary", "updatedPreview", "updatedFiles"]
-      : ["message", "versionSummary", "updatedPreview"],
-  };
-}
-
 const HEAVY_EDIT_SYSTEM_PROMPT = `You are Qorvex, the AI editor for an already-generated React Native Expo app.
 Return one strict JSON object only:
 {
@@ -114,6 +86,7 @@ Rules:
 - Keep responses compact and deterministic.
 - Only include files that changed.
 - Keep file contents complete, not diffs.
+- This project is metadata-driven. Prefer high-leverage edits to files like lib/app-plan.ts, app/(tabs)/_layout.tsx, or specific route files instead of inventing a totally different architecture.
 - Use updatedPreview when screens, layout, navigation, styling, or sample data change.
 - Prefer app-specific improvements over generic polish language.
 - Preserve the strongest existing ideas unless the user explicitly replaces them.
@@ -310,11 +283,49 @@ function extractPreviewSummary(preview: ProjectPreviewModel) {
 
 function safeParseEditResponse(text: string): EditResponsePayload | null {
   const cleaned = cleanJsonText(text);
-  try {
-    return JSON.parse(cleaned) as EditResponsePayload;
-  } catch {
-    return null;
+  const candidates = [cleaned];
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    candidates.push(cleaned.slice(firstBrace, lastBrace + 1));
   }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as Partial<EditResponsePayload>;
+      const hasUsefulPayload =
+        (parsed.updatedPreview &&
+          typeof parsed.updatedPreview === "object" &&
+          Object.keys(parsed.updatedPreview).length > 0) ||
+        (parsed.updatedFiles &&
+          typeof parsed.updatedFiles === "object" &&
+          Object.keys(parsed.updatedFiles).length > 0);
+
+      if (!hasUsefulPayload) continue;
+
+      return {
+        message:
+          typeof parsed.message === "string" && parsed.message.trim()
+            ? parsed.message.trim()
+            : "Project updated.",
+        versionSummary:
+          typeof parsed.versionSummary === "string" && parsed.versionSummary.trim()
+            ? parsed.versionSummary.trim()
+            : "Applied project changes.",
+        updatedPreview:
+          parsed.updatedPreview && typeof parsed.updatedPreview === "object"
+            ? parsed.updatedPreview
+            : undefined,
+        updatedFiles:
+          parsed.updatedFiles && typeof parsed.updatedFiles === "object"
+            ? parsed.updatedFiles
+            : undefined,
+      };
+    } catch {}
+  }
+
+  return null;
 }
 
 function buildHistory(
@@ -412,6 +423,12 @@ ${buildSnippets(message, context.files)}
 
 Current preview JSON:
 ${truncate(JSON.stringify(context.preview, null, 2), 2200)}
+
+Highest-leverage files in this project:
+- lib/app-plan.ts: app structure, screens, sections, sample data
+- app/(tabs)/_layout.tsx: tabs and navigation behavior
+- app/(tabs)/*.tsx: route-level screen binding
+- components/app-shell/*: shared visual system and rendering behavior
 
 Recent edit history:
 ${recentHistory || "(no previous edits yet)"}`;
@@ -718,7 +735,6 @@ export async function POST(request: NextRequest) {
         temperature: 0.2,
         thinkingBudget: intent === "heavy_edit" ? 4096 : 1024,
         responseMimeType: "application/json",
-        responseSchema: buildEditResponseSchema(isHeavy),
       }),
       timeoutMs,
       timeoutMessage,
@@ -727,6 +743,12 @@ export async function POST(request: NextRequest) {
 
     const parsed = safeParseEditResponse(result.text);
     if (!parsed) {
+      console.error("[generate chat] could not parse edit response:", {
+        intent,
+        projectId: project?.id ?? null,
+        textPreview: result.text.slice(0, 2000),
+      });
+
       if (generationId) {
         await admin
           .from("generations")
@@ -744,6 +766,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Qorvex could not parse the AI edit response. Please try again.",
+          intent,
+        },
+        { status: 502 },
+      );
+    }
+
+    if (isHeavy && !parsed.updatedFiles && !parsed.updatedPreview) {
+      if (generationId) {
+        await admin
+          .from("generations")
+          .update({
+            status: "failed",
+            prompt_tokens: result.usage.promptTokens,
+            completion_tokens: result.usage.completionTokens,
+            tokens_used: result.usage.totalTokens,
+            estimated_cost_usd: result.usage.estimatedCostUsd,
+            error: "AI edit response contained no usable file or preview changes",
+          })
+          .eq("id", generationId);
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            "Qorvex understood the request but the AI returned no usable changes. Please retry with a slightly more specific edit request.",
           intent,
         },
         { status: 502 },
