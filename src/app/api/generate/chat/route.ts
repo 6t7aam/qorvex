@@ -4,6 +4,7 @@ import { beginAIUsageSession } from "@/lib/ai-usage.server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { resolveActivePlan } from "@/lib/subscription.server";
 import { withTimeout } from "@/lib/with-timeout";
+import { repairTruncatedJson } from "@/lib/json-repair";
 import {
   getProjectPreviewModel,
   getVisibleProjectFiles,
@@ -289,6 +290,14 @@ function safeParseEditResponse(text: string): EditResponsePayload | null {
 
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     candidates.push(cleaned.slice(firstBrace, lastBrace + 1));
+  }
+
+  // Heavy edits embed full file contents and frequently get truncated at the
+  // output-token limit. Recover the near-complete payload instead of replying
+  // with "could not parse" and applying nothing.
+  if (firstBrace !== -1) {
+    const repaired = repairTruncatedJson(cleaned.slice(firstBrace));
+    if (repaired) candidates.push(repaired);
   }
 
   for (const candidate of candidates) {
@@ -689,10 +698,10 @@ export async function POST(request: NextRequest) {
           body.projectName,
           body.projectPrompt,
         );
-    const maxTokens = isHeavy ? 7000 : 1600;
-    const timeoutMs = isHeavy ? 90_000 : 35_000;
+    const maxTokens = isHeavy ? 16000 : 1600;
+    const timeoutMs = isHeavy ? 120_000 : 35_000;
     const timeoutMessage = isHeavy
-      ? "Project edit is taking longer than 90 seconds — the AI did not finish in time. Try a smaller change or retry."
+      ? "Project edit is taking longer than 120 seconds — the AI did not finish in time. Try a smaller change or retry."
       : "Project edit timed out after 35 seconds. Try again or describe a smaller change.";
 
     const estimate = provider.estimateUsage({
