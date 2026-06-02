@@ -138,9 +138,7 @@ function screenSectionSchema() {
             label: { type: "string" },
             title: { type: "string" },
             subtitle: { type: "string" },
-            value: {
-              type: ["string", "number"],
-            },
+            value: { type: "string" },
             change: { type: "string" },
             meta: { type: "string" },
           },
@@ -361,22 +359,22 @@ function isLargeRequest(input: GenerationPipelineInput) {
 function inferDomain(text: string) {
   const lower = text.toLowerCase();
 
-  if (/finance|budget|expense|bank|investment|wallet|crypto/.test(lower)) {
+  if (/finance|budget|expense|bank|investment|wallet|crypto|money|spending|saving|invoice|payment/.test(lower)) {
     return "finance";
   }
-  if (/fitness|workout|gym|health|meal|nutrition|running/.test(lower)) {
+  if (/fitness|workout|gym|health|meal|nutrition|running|run|training|train|exercise|athlete|performance|strength|cardio|calorie|steps|coach|sport|yoga/.test(lower)) {
     return "fitness";
   }
-  if (/restaurant|booking|reservation|table|dining|food/.test(lower)) {
+  if (/restaurant|booking|reservation|table|dining|food|menu|cafe|recipe|cook|kitchen/.test(lower)) {
     return "restaurant";
   }
-  if (/shop|store|ecommerce|cart|checkout|product|retail/.test(lower)) {
+  if (/shop|store|ecommerce|e-commerce|cart|checkout|product|retail|marketplace|buy|sell|order|catalog/.test(lower)) {
     return "commerce";
   }
-  if (/travel|trip|itinerary|hotel|flight|vacation/.test(lower)) {
+  if (/travel|trip|itinerary|hotel|flight|vacation|tour|destination|booking/.test(lower)) {
     return "travel";
   }
-  if (/social|community|chat|feed|creator|network/.test(lower)) {
+  if (/social|community|chat|feed|creator|network|friend|follow|post|message|share/.test(lower)) {
     return "social";
   }
 
@@ -548,7 +546,58 @@ function tryParseJson<T>(raw: string): T | null {
     } catch {}
   }
 
+  // Last resort: repair a truncated object by closing any unbalanced strings,
+  // arrays, and objects. Large screen specs occasionally get cut off at the
+  // output-token limit; recovering a near-complete spec beats falling back to
+  // the generic template.
+  if (start !== -1) {
+    const repaired = repairTruncatedJson(cleaned.slice(start));
+    if (repaired) {
+      try {
+        return JSON.parse(repaired) as T;
+      } catch {}
+    }
+  }
+
   return null;
+}
+
+function repairTruncatedJson(input: string): string | null {
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+    } else if (char === "{" || char === "[") {
+      stack.push(char);
+    } else if (char === "}" || char === "]") {
+      stack.pop();
+    }
+  }
+
+  if (stack.length === 0 && !inString) return null;
+
+  let result = input;
+  // Drop a trailing partial token (e.g. a dangling `"value": "abc` or comma).
+  result = result.replace(/,\s*$/, "");
+  if (inString) result += '"';
+  for (let i = stack.length - 1; i >= 0; i--) {
+    result += stack[i] === "{" ? "}" : "]";
+  }
+  return result;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -802,29 +851,29 @@ function buildSectionsFromDomain(
       type: "hero",
       title,
       body: purpose,
-      value: "Live",
-      cta: "Open flow",
+      value: "This week",
+      cta: "Get started",
       items: [
-        { label: "Priority", value: "High" },
-        { label: "Status", value: "Ready" },
+        { label: "Active", value: "Yes" },
+        { label: "Updated", value: "Today" },
       ],
     },
     {
       type: "stats",
-      title: "Overview",
+      title: "Snapshot",
       items: [
-        { label: "Tasks", value: "12" },
-        { label: "Updated", value: "Today" },
-        { label: "Coverage", value: "86%" },
+        { label: "In progress", value: "8" },
+        { label: "Completed", value: "23" },
+        { label: "This month", value: "+18%" },
       ],
     },
     {
       type: "list",
-      title: "Recent activity",
+      title: `Recent ${title.toLowerCase()}`,
       items: [
-        { label: "Workflow synced", value: "2 min ago" },
-        { label: "Insight created", value: "Today" },
-        { label: "Reminder scheduled", value: "Tomorrow" },
+        { title: "New item added", subtitle: "Just now", value: "Active" },
+        { title: "Update saved", subtitle: "12 min ago", value: "Synced" },
+        { title: "Weekly summary ready", subtitle: "Today", value: "View" },
       ],
     },
   ];
@@ -1755,12 +1804,21 @@ Retry requirements:
           temperature: attempt === 1 ? 0.15 : 0.1,
           thinkingBudget,
           responseMimeType: "application/json",
-          responseSchema,
+          // First attempt enforces the strict schema. If that fails (Gemini can
+          // reject or truncate under strict structured output), the retry drops
+          // the schema and relies on JSON mime-type + prompt, which is more
+          // forgiving and recovers far more often than failing to the template.
+          responseSchema: attempt === 1 ? responseSchema : undefined,
         }),
         120000,
         `${stageName} timed out before the AI response completed.`,
       );
       await onUsage?.(result.usage);
+      if (!result.text.trim()) {
+        throw new Error(
+          `${stageName} returned an empty response (likely hit the output token limit before finishing)`,
+        );
+      }
       const parsed = tryParseJson<unknown>(result.text);
       if (parsed === null) {
         throw new Error(`${stageName} returned invalid JSON`);
@@ -1982,8 +2040,8 @@ export async function executeGenerationPipeline(
     stageName: "screen stage",
     systemPrompt: screenPrompt.systemPrompt,
     prompt: screenPrompt.prompt,
-    maxTokens: 10000,
-    thinkingBudget: 16384,
+    maxTokens: 16000,
+    thinkingBudget: 12288,
     responseSchema: screenSpecsSchema(),
     fallback: screenFallback,
     normalize: normalizeScreenSpecs,
@@ -2008,8 +2066,8 @@ export async function executeGenerationPipeline(
     stageName: "refinement stage",
     systemPrompt: refinementPrompt.systemPrompt,
     prompt: refinementPrompt.prompt,
-    maxTokens: 10000,
-    thinkingBudget: 12288,
+    maxTokens: 16000,
+    thinkingBudget: 8192,
     responseSchema: screenSpecsSchema(),
     fallback: screens,
     normalize: normalizeScreenSpecs,

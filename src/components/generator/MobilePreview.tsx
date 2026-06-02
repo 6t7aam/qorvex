@@ -448,22 +448,44 @@ function SectionCard({
   if (section.type === "hero") {
     return (
       <div
-        className="rounded-3xl p-4 text-white shadow-xl"
+        className="relative overflow-hidden rounded-3xl p-4 text-white shadow-xl"
         style={{
           background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
         }}
       >
-        <div className="text-[10px] uppercase tracking-[0.25em] text-white/70">
-          {section.title}
+        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative">
+          <div className="text-[10px] uppercase tracking-[0.25em] text-white/70">
+            {section.title}
+          </div>
+          {section.value && (
+            <div className="mt-2 text-3xl font-bold tracking-tight">
+              {section.value}
+            </div>
+          )}
+          {section.body && (
+            <p className="mt-2 text-xs leading-relaxed text-white/85">
+              {section.body}
+            </p>
+          )}
+          {items.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {items.slice(0, 3).map((item, index) => (
+                <div
+                  key={getPreviewItemKey(section, item, index)}
+                  className="rounded-xl bg-white/15 px-2.5 py-1.5 backdrop-blur"
+                >
+                  <div className="text-[9px] uppercase tracking-wide text-white/70">
+                    {getStringField(item, ["label", "title"], "")}
+                  </div>
+                  <div className="text-xs font-semibold text-white">
+                    {getStringField(item, ["value"], "")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {section.value && (
-          <div className="mt-2 text-2xl font-semibold">{section.value}</div>
-        )}
-        {section.body && (
-          <p className="mt-2 text-xs leading-relaxed text-white/80">
-            {section.body}
-          </p>
-        )}
       </div>
     );
   }
@@ -601,30 +623,49 @@ function SectionCard({
         </p>
       )}
       <div className="mt-3 space-y-2">
-        {items.length > 0 ? items.slice(0, 4).map((item, index) => (
+        {items.length > 0 ? items.slice(0, 6).map((item, index) => {
+          const change = "change" in item ? String(item.change) : "";
+          const positive = /^\+|up|gain/i.test(change);
+          return (
           <div
             key={getPreviewItemKey(section, item, index)}
-            className="rounded-2xl bg-black/20 px-3 py-2"
+            className="flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-black/20 px-3 py-2.5"
           >
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-xs font-medium text-white">
-                  {getStringField(item, ["title", "label"], "Item")}
-                </div>
-                {"subtitle" in item && (
-                  <div className="text-[10px] text-white/45">
-                    {String(item.subtitle)}
-                  </div>
-                )}
+            <div
+              className="h-8 w-8 shrink-0 rounded-xl"
+              style={{
+                background: `linear-gradient(135deg, ${colors.primary}40, ${colors.secondary}30)`,
+              }}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xs font-medium text-white">
+                {getStringField(item, ["title", "label"], "Item")}
               </div>
+              {("subtitle" in item || "meta" in item) && (
+                <div className="truncate text-[10px] text-white/45">
+                  {getStringField(item, ["subtitle", "meta"], "")}
+                </div>
+              )}
+            </div>
+            <div className="flex shrink-0 flex-col items-end">
               {"value" in item && (
                 <div className="text-xs font-semibold text-white">
                   {String(item.value)}
                 </div>
               )}
+              {change && (
+                <div
+                  className={`text-[10px] font-medium ${
+                    positive ? "text-emerald-300" : "text-white/45"
+                  }`}
+                >
+                  {change}
+                </div>
+              )}
             </div>
           </div>
-        )) : (
+          );
+        }) : (
           <div className="rounded-2xl bg-black/20 px-3 py-2 text-xs text-white/55">
             No items available for this section yet.
           </div>
