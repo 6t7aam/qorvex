@@ -22,7 +22,9 @@ import type { GeneratedFile, UserProfile } from "@/types";
 import { GenerationProgress } from "@/components/generator/GenerationProgress";
 import { MobilePreview } from "@/components/generator/MobilePreview";
 import { AIChat } from "@/components/generator/AIChat";
+import { ClarifyModal } from "@/components/generator/ClarifyModal";
 import { UpgradeModal } from "@/components/billing/UpgradeModal";
+import type { ClarifyQuestion } from "@/app/api/generate/clarify/route";
 
 const COLORS: { name: string; value: string }[] = [
   { name: "Violet", value: "#7c3aed" },
@@ -133,6 +135,12 @@ function GeneratePageInner() {
   const [platform, setPlatform] = useState<"ios" | "android" | "both">("both");
   const [tipsOpen, setTipsOpen] = useState(false);
 
+  const [clarifyOpen, setClarifyOpen] = useState(false);
+  const [clarifyLoading, setClarifyLoading] = useState(false);
+  const [clarifyQuestions, setClarifyQuestions] = useState<ClarifyQuestion[]>(
+    [],
+  );
+
   useEffect(() => {
     if (upgradeRequired) setUpgradeModal(true);
   }, [upgradeRequired, setUpgradeModal]);
@@ -183,16 +191,9 @@ function GeneratePageInner() {
     );
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!currentPrompt.trim()) return;
-    if (user && !usageLoading && !limitCheck.allowed) {
-      setUpgradeModal(true);
-      return;
-    }
-
+  async function runGeneration(promptOverride?: string) {
     await startGenerationFlow({
-      prompt: currentPrompt.trim(),
+      prompt: (promptOverride ?? currentPrompt).trim(),
       templateId,
       colors: {
         primary,
@@ -202,6 +203,51 @@ function GeneratePageInner() {
       features,
       platform,
     });
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!currentPrompt.trim()) return;
+    if (user && !usageLoading && !limitCheck.allowed) {
+      setUpgradeModal(true);
+      return;
+    }
+
+    // Open the clarify modal and fetch targeted questions in the background.
+    // If anything fails, the user can still skip straight to generation.
+    setClarifyQuestions([]);
+    setClarifyLoading(true);
+    setClarifyOpen(true);
+
+    try {
+      const response = await fetch("/api/generate/clarify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: currentPrompt.trim(),
+          templateId,
+          features,
+        }),
+      });
+      if (response.ok) {
+        const data = (await response.json()) as {
+          questions?: ClarifyQuestion[];
+        };
+        setClarifyQuestions(data.questions ?? []);
+      }
+    } catch {
+      // Ignore — the modal will offer "Skip & build".
+    } finally {
+      setClarifyLoading(false);
+    }
+  }
+
+  async function handleClarifyConfirm(answersText: string) {
+    setClarifyOpen(false);
+    const finalPrompt = answersText
+      ? `${currentPrompt.trim()}${answersText}`
+      : currentPrompt.trim();
+    await runGeneration(finalPrompt);
   }
 
   if (isGenerating) {
@@ -620,6 +666,13 @@ function GeneratePageInner() {
           </form>
         </div>
       </div>
+      <ClarifyModal
+        open={clarifyOpen}
+        loading={clarifyLoading}
+        questions={clarifyQuestions}
+        onClose={() => setClarifyOpen(false)}
+        onConfirm={handleClarifyConfirm}
+      />
       <UpgradeModal />
     </>
   );

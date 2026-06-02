@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import { useGenerationStore } from "@/stores/useGenerationStore";
 
 const STAGES = [
   { key: "planning", label: "Planning app architecture" },
   { key: "screens", label: "Generating screens" },
+  { key: "refining", label: "Polishing screen content" },
   { key: "navigation", label: "Creating navigation" },
   { key: "components", label: "Building components" },
   { key: "preview", label: "Preparing preview" },
@@ -44,7 +46,17 @@ export function GenerationProgress() {
 
             return (
               <li key={stage.key} className="flex items-center gap-4 text-base">
-                <span
+                <motion.span
+                  animate={
+                    active
+                      ? { scale: [1, 1.12, 1] }
+                      : { scale: 1 }
+                  }
+                  transition={
+                    active
+                      ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+                      : { duration: 0.2 }
+                  }
                   className={`flex h-8 w-8 items-center justify-center rounded-full ${
                     done
                       ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30"
@@ -60,7 +72,7 @@ export function GenerationProgress() {
                   ) : (
                     <span className="text-xs">{idx + 1}</span>
                   )}
-                </span>
+                </motion.span>
                 <span
                   className={
                     active
@@ -135,13 +147,25 @@ function LivePhone({
   ];
 
   return (
-    <div
+    <motion.div
       className="relative h-[640px] w-[320px] rounded-[48px] border border-white/15 bg-[#0a0a0a] p-3"
-      style={{
-        boxShadow: generating
-          ? "0 0 56px -10px rgba(16, 185, 129, 0.45), 0 30px 60px -12px rgba(0, 0, 0, 0.65)"
-          : "0 30px 60px -12px rgba(0, 0, 0, 0.65)",
-      }}
+      animate={
+        generating
+          ? {
+              y: [0, -10, 0],
+              boxShadow: [
+                "0 0 40px -12px rgba(16,185,129,0.35), 0 30px 60px -12px rgba(0,0,0,0.65)",
+                "0 0 64px -8px rgba(34,211,238,0.5), 0 30px 60px -12px rgba(0,0,0,0.65)",
+                "0 0 40px -12px rgba(16,185,129,0.35), 0 30px 60px -12px rgba(0,0,0,0.65)",
+              ],
+            }
+          : { y: 0, boxShadow: "0 30px 60px -12px rgba(0,0,0,0.65)" }
+      }
+      transition={
+        generating
+          ? { duration: 4, repeat: Infinity, ease: "easeInOut" }
+          : { duration: 0.4 }
+      }
     >
       <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[38px] bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.2),_rgba(7,10,18,0.98)_55%)]">
         <div className="absolute left-1/2 top-2.5 z-10 h-2 w-24 -translate-x-1/2 rounded-full bg-black ring-1 ring-white/10" />
@@ -166,13 +190,25 @@ function LivePhone({
             <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
               Current focus
             </div>
-            <div className="mt-2 text-2xl font-semibold text-white">
-              {currentMessage}
+            <div className="relative mt-2 min-h-[4rem]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentMessage}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-2xl font-semibold text-white"
+                >
+                  {currentMessage}
+                </motion.div>
+              </AnimatePresence>
             </div>
             <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-400 transition-all"
-                style={{ width: `${Math.max(6, currentPercent)}%` }}
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-400"
+                animate={{ width: `${Math.max(6, currentPercent)}%` }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               />
             </div>
           </div>
@@ -198,6 +234,6 @@ function LivePhone({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

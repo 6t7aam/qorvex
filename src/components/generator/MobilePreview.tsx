@@ -21,6 +21,22 @@ interface MobilePreviewProps {
   compact?: boolean;
 }
 
+const SCREEN_VARIANTS = {
+  enter: (d: number) => ({ opacity: 0, x: d >= 0 ? 30 : -30 }),
+  center: { opacity: 1, x: 0 },
+  exit: (d: number) => ({ opacity: 0, x: d >= 0 ? -26 : 26 }),
+};
+
+const SECTION_LIST_VARIANTS = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
+};
+
+const SECTION_ITEM_VARIANTS = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+} as const;
+
 type PreviewItem = Record<string, string | number>;
 
 function isPreviewItem(value: unknown): value is PreviewItem {
@@ -98,8 +114,17 @@ export function MobilePreview({
 
   const screens = preview.screens.slice(0, 6);
   const [screenIndex, setScreenIndex] = useState(0);
+  // Track navigation direction so screen transitions slide the natural way.
+  const [direction, setDirection] = useState(0);
+  const prevIndexRef = useRef(0);
 
   const safeScreenIndex = screenIndex < screens.length ? screenIndex : 0;
+
+  function goToScreen(index: number) {
+    setDirection(index > prevIndexRef.current ? 1 : index < prevIndexRef.current ? -1 : 0);
+    prevIndexRef.current = index;
+    setScreenIndex(index);
+  }
 
   // Brief flash so the user can see "something just updated" even when screen
   // titles stay the same across an edit. Triggers whenever generatedFiles
@@ -153,14 +178,25 @@ export function MobilePreview({
               <button
                 key={getScreenKey(screen, index)}
                 type="button"
-                onClick={() => setScreenIndex(index)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition ${
-                  index === safeScreenIndex
-                    ? "bg-white/12 text-white"
-                    : "bg-white/[0.03] text-text-secondary hover:text-white"
-                }`}
+                onClick={() => goToScreen(index)}
+                className="relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition"
               >
-                {screen.title}
+                {index === safeScreenIndex && (
+                  <motion.span
+                    layoutId="preview-tab-active"
+                    className="absolute inset-0 rounded-full bg-white/12"
+                    transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                  />
+                )}
+                <span
+                  className={`relative z-10 ${
+                    index === safeScreenIndex
+                      ? "text-white"
+                      : "text-text-secondary hover:text-white"
+                  }`}
+                >
+                  {screen.title}
+                </span>
               </button>
             ))}
           </div>
@@ -169,11 +205,11 @@ export function MobilePreview({
 
       <div className="flex min-h-0 w-full flex-1 items-center justify-center py-1">
         <motion.div
-          key={`${device}-${activeScreen?.id ?? "preview"}`}
-          initial={{ rotateY: 90, opacity: 0 }}
-          animate={{ rotateY: 0, opacity: 1 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          style={{ transformPerspective: 1200 }}
+          key={device}
+          initial={{ rotateY: 24, opacity: 0, scale: 0.96 }}
+          animate={{ rotateY: 0, opacity: 1, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          style={{ transformPerspective: 1400 }}
           className="flex h-full max-h-full items-center justify-center"
         >
           <PhoneFrame
@@ -182,16 +218,35 @@ export function MobilePreview({
             background={preview.theme.background}
             compact={compact}
           >
-            {activeScreen ? (
-              <PreviewScreen
-                preview={preview}
-                screen={activeScreen}
-                tabs={tabs}
-                colors={colors}
-              />
-            ) : (
-              <EmptyPreview />
-            )}
+            <AnimatePresence mode="wait" initial={false} custom={direction}>
+              {activeScreen ? (
+                <motion.div
+                  key={activeScreen.id}
+                  custom={direction}
+                  variants={SCREEN_VARIANTS}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  className="h-full w-full"
+                >
+                  <PreviewScreen
+                    preview={preview}
+                    screen={activeScreen}
+                    tabs={tabs}
+                    colors={colors}
+                    onSelectTab={(title) => {
+                      const idx = screens.findIndex(
+                        (s) => s.title.toLowerCase() === title.toLowerCase(),
+                      );
+                      if (idx >= 0) goToScreen(idx);
+                    }}
+                  />
+                </motion.div>
+              ) : (
+                <EmptyPreview />
+              )}
+            </AnimatePresence>
           </PhoneFrame>
         </motion.div>
       </div>
@@ -280,11 +335,13 @@ function PreviewScreen({
   screen,
   tabs,
   colors,
+  onSelectTab,
 }: {
   preview: ProjectPreviewModel;
   screen: ProjectPreviewScreen;
   tabs: string[];
   colors: { primary: string; secondary: string; accent: string };
+  onSelectTab?: (title: string) => void;
 }) {
   const sections =
     screen.sections.length > 0
@@ -320,39 +377,57 @@ function PreviewScreen({
         )}
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-4">
+      <motion.div
+        key={screen.id}
+        variants={SECTION_LIST_VARIANTS}
+        initial="hidden"
+        animate="show"
+        className="flex-1 space-y-3 overflow-y-auto px-4 pb-4"
+      >
         {sections.map((section, index) => (
-          <SectionCard
+          <motion.div
             key={getSectionKey(section, index)}
-            section={section}
-            colors={colors}
-          />
+            variants={SECTION_ITEM_VARIANTS}
+          >
+            <SectionCard section={section} colors={colors} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <div className="mt-auto border-t border-white/5 bg-black/30 px-4 py-2.5">
         <div className="flex items-center justify-around">
           {tabs.map((tab, index) => {
             const active =
-              screen.title.toLowerCase() === tab.toLowerCase() || index === 0;
+              screen.title.toLowerCase() === tab.toLowerCase() ||
+              (index === 0 &&
+                !tabs.some(
+                  (t) => t.toLowerCase() === screen.title.toLowerCase(),
+                ));
             return (
-              <div key={getTabKey(tab, index)} className="flex flex-col items-center gap-1">
-                <div
+              <button
+                key={getTabKey(tab, index)}
+                type="button"
+                onClick={() => onSelectTab?.(tab)}
+                className="flex flex-col items-center gap-1 transition active:scale-90"
+              >
+                <motion.div
                   className="h-2 w-2 rounded-full"
-                  style={{
+                  animate={{
                     backgroundColor: active
                       ? colors.primary
                       : "rgba(255,255,255,0.22)",
+                    scale: active ? 1.25 : 1,
                   }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 />
                 <span
-                  className={`text-[9px] uppercase tracking-wider ${
+                  className={`text-[9px] uppercase tracking-wider transition-colors ${
                     active ? "text-white/85" : "text-white/40"
                   }`}
                 >
                   {tab}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -445,8 +520,15 @@ function SectionCard({
                 key={getPreviewItemKey(section, point, index)}
                 className="flex flex-1 flex-col items-center gap-2"
               >
-                <div
-                  className="w-full rounded-t-xl"
+                <motion.div
+                  className="w-full origin-bottom rounded-t-xl"
+                  initial={{ scaleY: 0, opacity: 0.4 }}
+                  animate={{ scaleY: 1, opacity: 1 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: index * 0.06,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
                   style={{
                     height,
                     background:

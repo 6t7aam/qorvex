@@ -93,12 +93,18 @@ interface FileManifestEntry {
 const STAGE_MESSAGE =
   "Generating a larger app may take longer. Qorvex is optimizing the project architecture in stages.";
 
-const MAX_PROMPT_CHARS = 2200;
-const MAX_FEATURES = 12;
-const MAX_ENTITY_COUNT = 8;
+const MAX_PROMPT_CHARS = 4200;
+const MAX_FEATURES = 14;
+const MAX_ENTITY_COUNT = 10;
 const MAX_SCREEN_COUNT = 6;
 const MAX_TABS = 5;
 const DEFAULT_APP_BACKGROUND = "#05070f";
+
+// Section depth controls. A premium app screen carries multiple, varied
+// content blocks with real sample rows — not a single placeholder card.
+const MIN_SECTIONS_PER_SCREEN = 4;
+const MAX_SECTIONS_PER_SCREEN = 7;
+const MAX_SECTION_ITEMS = 8;
 
 function stringArraySchema(minItems = 0, maxItems = 12) {
   return {
@@ -124,14 +130,19 @@ function screenSectionSchema() {
       cta: { type: "string" },
       items: {
         type: "array",
+        maxItems: MAX_SECTION_ITEMS,
         items: {
           type: "object",
           additionalProperties: true,
           properties: {
             label: { type: "string" },
+            title: { type: "string" },
+            subtitle: { type: "string" },
             value: {
               type: ["string", "number"],
             },
+            change: { type: "string" },
+            meta: { type: "string" },
           },
         },
       },
@@ -261,8 +272,8 @@ function screenSpecsSchema() {
             },
             sections: {
               type: "array",
-              minItems: 3,
-              maxItems: 5,
+              minItems: MIN_SECTIONS_PER_SCREEN,
+              maxItems: MAX_SECTIONS_PER_SCREEN,
               items: screenSectionSchema(),
             },
           },
@@ -1746,7 +1757,7 @@ Retry requirements:
           responseMimeType: "application/json",
           responseSchema,
         }),
-        45000,
+        120000,
         `${stageName} timed out before the AI response completed.`,
       );
       await onUsage?.(result.usage);
@@ -1770,52 +1781,56 @@ function buildPlanPrompt(input: GenerationPipelineInput) {
 
   return {
     systemPrompt:
-      "You are a principal product designer, staff mobile PM, and Expo architect creating launch-ready app plans. Think in terms of product value, retention loops, dense but clear UX, realistic entities, and differentiated mobile interactions. Avoid demo-ware. Respond with one valid JSON object only.",
-    prompt: `Create an app plan JSON.
-appName: ${input.projectName}
-platform: ${input.platform}
-template: ${input.templateId ?? "custom"}
-colors: ${input.colors.primary}, ${input.colors.secondary}, ${input.colors.accent}
-features: ${features.join(", ") || "core flow, auth, profile"}
-prompt: ${prompt}
+      "You are a principal product designer and staff mobile engineer at a top-tier studio (think Linear, Cash App, Airbnb, Duolingo). You design App Store-quality React Native products that look like a team shipped them over weeks: a clear value proposition, a real primary job-to-be-done, an information architecture with no filler, and a distinctive visual identity. You are allergic to demo-ware, lorem-ipsum, and generic 'Welcome to your dashboard' screens. Every decision is grounded in the specific product domain. Respond with exactly one valid JSON object, no prose, no markdown.",
+    prompt: `Design the product blueprint for this app. Treat it as a real, fundable product — not a template.
 
-Return JSON:
+APP BRIEF
+- working name: ${input.projectName}
+- platform: ${input.platform}
+- template hint: ${input.templateId ?? "custom (no template — design from the idea)"}
+- brand colors: primary ${input.colors.primary}, secondary ${input.colors.secondary}, accent ${input.colors.accent}
+- requested features: ${features.join(", ") || "core flow, authentication, profile"}
+- user's description: ${prompt}
+
+THINK FIRST (internally, do not output your reasoning):
+- Who is the target user and what is the single most important thing they open this app to do?
+- What is the primary workflow (the core loop), one supporting workflow, and one retention/return loop?
+- What real-world entities and data does this domain have? Use real names, brands, numbers, units, and statuses — never "Item 1", "Lorem", or "$0".
+
+Return exactly this JSON shape:
 {
-  "appName": "string",
-  "description": "string",
-  "theme": { "primary": "string", "secondary": "string", "accent": "string", "background": "${DEFAULT_APP_BACKGROUND}" },
+  "appName": "string — a real, memorable product name (not the raw prompt)",
+  "description": "string — one sharp sentence describing the product and who it's for",
+  "theme": { "primary": "${input.colors.primary}", "secondary": "${input.colors.secondary}", "accent": "${input.colors.accent}", "background": "${DEFAULT_APP_BACKGROUND}" },
   "navigation": { "type": "tabs", "tabs": ["string"] },
-  "screens": [{ "id": "string", "title": "string", "purpose": "string", "route": "string", "tabLabel": "string", "icon": "string" }],
-  "features": ["string"],
-  "entities": ["string"],
-  "sampleData": { "key": "value" },
+  "screens": [{ "id": "kebab-case", "title": "string", "purpose": "string — what the user accomplishes here", "route": "string", "tabLabel": "short string", "icon": "valid Ionicons name, e.g. 'home-outline'" }],
+  "features": ["string — shippable, concrete capability"],
+  "entities": ["string — the real data objects of this domain"],
+  "sampleData": { "domain-specific keys with realistic seed values, names, and numbers": "..." },
   "architecture": { "routing": "string", "styling": "string", "backend": "string", "state": "string" }
 }
 
-Rules:
-- 4 to 6 screens
-- include one clear primary workflow, one supporting workflow, and one retention/return loop
-- specific to the app idea
-- include auth or onboarding when relevant
-- include profile or settings
-- include at least one screen that feels operational, data-rich, or action-oriented
-- tabs should be concise
-- use a near-black app background by default
-- avoid generic filler such as repeated 'Welcome' dashboards unless the product truly needs it
-- prefer differentiated flows, clear user value, and realistic product entities
-- feature names should sound shippable, not aspirational
-- sampleData should contain domain-realistic nouns, labels, and seed values
-- make the information architecture feel like a launch-ready app, not a demo
-- no markdown`,
+HARD RULES
+- Exactly 4 to 6 screens. The FIRST screen is the home/hub and must be immediately useful (not a marketing splash).
+- Screens must cover: (1) the primary workflow, (2) a supporting workflow, (3) a data-rich/operational or insights screen, (4) profile/settings. Add onboarding/auth only when the domain truly needs it.
+- Every screen title and purpose must be unique and domain-specific. NO two screens may feel interchangeable.
+- tabLabels are short (1 word ideal). icons must be REAL Ionicons "*-outline" names.
+- sampleData must be rich and realistic: real-sounding names, brands, amounts with units, dates, statuses. This is the seed data the whole app renders from — make it convincing.
+- features must read like a changelog of a shipped app, not a wish list.
+- Use the provided brand colors verbatim and a near-black background.
+- Absolutely no generic filler ("manage everything in one place", "Welcome", "Dashboard" as a standalone screen).
+- Output JSON only. No markdown, no comments, no trailing text.`,
   };
 }
 
 function buildScreenPrompt(plan: AppPlan) {
   return {
     systemPrompt:
-      "You convert app plans into rich, premium mobile screen specs for a high-end Expo product. Make each screen useful on first open, visually intentional, and materially different from the others. Favor practical product depth over chrome. Respond with one valid JSON object only.",
-    prompt: `Expand this plan into detailed screen specs.
-plan: ${JSON.stringify({
+      "You are a senior product designer who fills mobile screens with believable, production-grade content. You write the actual copy, metrics, and rows a shipped app would show — using the product's real sample data. Each screen must feel hand-crafted: a strong hero, varied section types, dense but legible content, and at least one clear next action. You never repeat the same card pattern across screens and never use placeholder wording. Respond with exactly one valid JSON object, no prose, no markdown.",
+    prompt: `Turn this product blueprint into fully fleshed-out screen specs. Render REAL content from the sample data — names, numbers, statuses — as if a designer staged the app for an App Store screenshot.
+
+BLUEPRINT
+${JSON.stringify({
       appName: plan.appName,
       description: plan.description,
       navigation: plan.navigation,
@@ -1825,46 +1840,67 @@ plan: ${JSON.stringify({
       sampleData: plan.sampleData,
     })}
 
-Return JSON:
+Return exactly this JSON shape:
 {
   "screens": [
     {
-      "id": "string",
+      "id": "string (match the blueprint screen id)",
       "title": "string",
-      "subtitle": "string",
+      "subtitle": "string — specific, never 'manage everything in one place'",
       "route": "string",
       "tabLabel": "string",
-      "icon": "string",
-      "primaryActions": ["string"],
+      "icon": "valid Ionicons *-outline name",
+      "primaryActions": ["string — verb-first, e.g. 'Log workout'"],
       "loadingState": { "title": "string", "body": "string" },
       "emptyState": { "title": "string", "body": "string", "cta": "string" },
       "sections": [
         {
           "type": "hero | stats | list | chart | actions | empty",
           "title": "string",
-          "body": "string",
-          "value": "string",
-          "cta": "string",
-          "items": [{ "label": "string", "value": "string or number" }]
+          "body": "string (optional)",
+          "value": "string (optional, for hero/stat headline)",
+          "cta": "string (optional)",
+          "items": [{ "label": "string", "title": "string", "subtitle": "string", "value": "string or number", "change": "string e.g. +12%", "meta": "string" }]
         }
       ]
     }
   ]
 }
 
-Rules:
-- every screen needs 3 to 5 realistic sections
-- include app-specific labels and sample content
-- include charts only when domain-relevant
-- do not repeat the same generic wording across screens
-- the home screen should feel immediately useful, not like placeholder marketing copy
-- vary section structure between screens; avoid cloning the same card pattern everywhere
-- include specific metrics, lists, CTAs, and microcopy that match the app domain
-- at least one section per screen should contain a concrete user decision, next action, or prioritization cue
-- hero sections should feel editorial and premium, not like empty dashboard filler
-- avoid vague subtitles such as "manage everything in one place"
-- prefer practical depth over decorative filler
-- no markdown`,
+SECTION CRAFT RULES
+- Every screen needs ${MIN_SECTIONS_PER_SCREEN} to ${MAX_SECTIONS_PER_SCREEN} sections, ordered with intent: lead with a hero, then mix stats / list / chart / actions. Use 'empty' only as a tasteful secondary state, never as a screen's main content.
+- The FIRST section of each screen should orient the user instantly with concrete data (a number, a status, a next action) — not marketing copy.
+- 'list' items: use title + subtitle + value (and change/meta when useful) so rows read like real records (e.g. {"title":"Salary","subtitle":"Acme Inc · Mar 1","value":"+$4,500"}). Provide 3-6 items.
+- 'stats' items: 3 metrics with value and a change/trend (e.g. {"label":"Active users","value":"12,480","change":"+8.2%"}).
+- 'chart' items: 5-7 points with numeric values and short labels — only when a trend genuinely matters in this domain.
+- 'actions' items: 2-4 concrete, verb-first actions the user can take next.
+- hero: an editorial headline value + one tight supporting sentence in body.
+- Vary section composition between screens — no two screens may share the same shape and wording.
+- Every number, name, and label must be plausible for THIS product. No "Item 1", no "$0", no "Lorem", no repeated boilerplate.
+- At least one section per screen must surface a decision, priority, or next best action for the user.
+- Output JSON only. No markdown, no comments.`,
+  };
+}
+
+function buildRefinementPrompt(plan: AppPlan, screens: ScreenSpec[]) {
+  return {
+    systemPrompt:
+      "You are a ruthless design director doing a final polish pass before an App Store release. You receive draft screen specs and return them upgraded: tighter copy, more believable data, better hierarchy, and any obvious weak/repetitive/placeholder section replaced with something a real product would ship. You never reduce the amount of content and you never break the JSON shape. Respond with exactly one valid JSON object, no prose, no markdown.",
+    prompt: `Polish these draft screens to a shippable, premium standard. Keep the same screen ids, count, and JSON shape — improve the contents.
+
+PRODUCT: ${plan.appName} — ${plan.description}
+SAMPLE DATA: ${JSON.stringify(plan.sampleData)}
+
+DRAFT SCREENS
+${JSON.stringify({ screens })}
+
+Return the SAME JSON shape ({ "screens": [...] }) with these improvements:
+- Replace any generic, repetitive, or placeholder section/copy with concrete, domain-true content.
+- Make hero values punchier and stat changes realistic (real percentages, units, dates).
+- Ensure each screen has a distinct rhythm of section types and at least one clear next action.
+- Enrich thin 'list' rows into title + subtitle + value records; ensure charts have 5-7 real points.
+- Keep ${MIN_SECTIONS_PER_SCREEN}-${MAX_SECTIONS_PER_SCREEN} sections per screen. Do not drop screens or fields.
+- Output JSON only. No markdown, no commentary.`,
   };
 }
 
@@ -1921,8 +1957,8 @@ export async function executeGenerationPipeline(
     stageName: "plan stage",
     systemPrompt: planPrompt.systemPrompt,
     prompt: planPrompt.prompt,
-    maxTokens: 2800,
-    thinkingBudget: 4096,
+    maxTokens: 4500,
+    thinkingBudget: 8192,
     responseSchema: appPlanSchema(),
     fallback: fallbackPlan,
     normalize: normalizePlan,
@@ -1946,8 +1982,8 @@ export async function executeGenerationPipeline(
     stageName: "screen stage",
     systemPrompt: screenPrompt.systemPrompt,
     prompt: screenPrompt.prompt,
-    maxTokens: 4800,
-    thinkingBudget: 8192,
+    maxTokens: 10000,
+    thinkingBudget: 16384,
     responseSchema: screenSpecsSchema(),
     fallback: screenFallback,
     normalize: normalizeScreenSpecs,
@@ -1960,12 +1996,38 @@ export async function executeGenerationPipeline(
   });
 
   onEvent({
+    stage: "refining",
+    percent: 44,
+    message: "Polishing screen content",
+  });
+
+  // Best-effort polish pass. Falls back to the un-refined screens if the model
+  // fails or runs out of budget — we never want refinement to block a result.
+  const refinementPrompt = buildRefinementPrompt(plan, screens);
+  const refinedScreens = await runStructuredStage<ScreenSpec[]>({
+    stageName: "refinement stage",
+    systemPrompt: refinementPrompt.systemPrompt,
+    prompt: refinementPrompt.prompt,
+    maxTokens: 10000,
+    thinkingBudget: 12288,
+    responseSchema: screenSpecsSchema(),
+    fallback: screens,
+    normalize: normalizeScreenSpecs,
+    warnings,
+    ensureStageBudget: options?.ensureStageBudget,
+    onUsage: async (stageUsage) => {
+      usage.push(stageUsage);
+      await options?.onUsage?.(stageUsage);
+    },
+  });
+
+  onEvent({
     stage: "navigation",
-    percent: 48,
+    percent: 56,
     message: "Creating navigation",
   });
 
-  const manifest = buildFileManifest(screens);
+  const manifest = buildFileManifest(refinedScreens);
   const batches = partitionManifest(manifest);
   const files: Record<string, string> = {};
   let partial = false;
@@ -1984,7 +2046,7 @@ export async function executeGenerationPipeline(
     });
 
     try {
-      const generated = buildFilesFromManifest(plan, screens, batch);
+      const generated = buildFilesFromManifest(plan, refinedScreens, batch);
       Object.assign(files, generated);
     } catch (error) {
       partial = true;
@@ -2002,7 +2064,7 @@ export async function executeGenerationPipeline(
     message: "Preparing preview",
   });
 
-  const preview = buildPreview(plan, screens);
+  const preview = buildPreview(plan, refinedScreens);
 
   onEvent({
     stage: "finalizing",
