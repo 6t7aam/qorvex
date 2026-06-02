@@ -1,4 +1,5 @@
 import type { GeneratedFile, ProjectColors } from "@/types";
+import { defaultStyleForDomain } from "@/lib/design-styles";
 
 export const PROJECT_PREVIEW_FILE = ".qorvex/preview.json";
 export const PROJECT_CHAT_HISTORY_FILE = ".qorvex/chat-history.json";
@@ -40,6 +41,8 @@ export interface ProjectPreviewModel {
   screens: ProjectPreviewScreen[];
   components: string[];
   sampleData: Record<string, unknown>;
+  /** Chosen design direction id (see lib/design-styles). */
+  designStyle?: string;
 }
 
 export interface ProjectChatHistoryMessage {
@@ -299,6 +302,7 @@ function inferPreviewFromPrompt(
         categories: ["Food", "Travel", "Shopping", "Bills"],
         recurringTransactions: 6,
       },
+      designStyle: defaultStyleForDomain(domain),
     };
   }
 
@@ -406,6 +410,7 @@ function inferPreviewFromPrompt(
         workouts: ["Leg day", "Tempo run", "Mobility", "Upper body"],
         weeklyTarget: 5,
       },
+      designStyle: defaultStyleForDomain(domain),
     };
   }
 
@@ -507,6 +512,7 @@ function inferPreviewFromPrompt(
         cuisines: ["Italian", "Sushi", "Bistro"],
         savedRestaurants: 9,
       },
+      designStyle: defaultStyleForDomain(domain),
     };
   }
 
@@ -611,6 +617,7 @@ function inferPreviewFromPrompt(
       cards: 4,
       listItems: 6,
     },
+    designStyle: defaultStyleForDomain(domain),
   };
 }
 
@@ -684,6 +691,10 @@ function normalizePreviewModel(
       isRecord(input?.sampleData) && Object.keys(input.sampleData).length > 0
         ? input.sampleData
         : fallback.sampleData,
+    designStyle:
+      typeof input?.designStyle === "string" && input.designStyle.trim()
+        ? input.designStyle.trim()
+        : fallback.designStyle,
   };
 }
 

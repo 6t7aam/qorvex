@@ -7,6 +7,11 @@ import {
   withProjectPreviewFile,
 } from "@/lib/project-artifacts";
 import type { ProjectColors } from "@/types";
+import {
+  defaultStyleForDomain,
+  getDesignStyleIds,
+  listDesignStyleChoices,
+} from "@/lib/design-styles";
 
 export interface GenerationPipelineInput {
   prompt: string;
@@ -55,6 +60,7 @@ interface AppPlan {
   features: string[];
   entities: string[];
   sampleData: Record<string, unknown>;
+  designStyle: string;
   architecture: {
     routing: string;
     styling: string;
@@ -203,6 +209,10 @@ function appPlanSchema() {
         type: "object",
         additionalProperties: true,
       },
+      designStyle: {
+        type: "string",
+        enum: getDesignStyleIds(),
+      },
       architecture: {
         type: "object",
         additionalProperties: false,
@@ -224,6 +234,7 @@ function appPlanSchema() {
       "features",
       "entities",
       "sampleData",
+      "designStyle",
       "architecture",
     ],
   };
@@ -507,6 +518,7 @@ function buildFallbackPlan(input: GenerationPipelineInput): AppPlan {
     screens,
     features,
     entities,
+    designStyle: defaultStyleForDomain(domain),
     sampleData: {
       domain,
       featuredMetrics:
@@ -714,6 +726,10 @@ function normalizePlan(value: unknown, fallback: AppPlan): AppPlan {
           ).slice(0, MAX_ENTITY_COUNT)
         : fallback.entities,
     sampleData: isRecord(value.sampleData) ? value.sampleData : fallback.sampleData,
+    designStyle:
+      typeof value.designStyle === "string" && value.designStyle.trim()
+        ? value.designStyle.trim()
+        : fallback.designStyle,
     architecture: {
       routing:
         isRecord(value.architecture) &&
@@ -1735,6 +1751,7 @@ function buildPreview(plan: AppPlan, screens: ScreenSpec[]): ProjectPreviewModel
       entities: plan.entities,
       features: plan.features,
     },
+    designStyle: plan.designStyle,
   };
 }
 
@@ -1865,8 +1882,12 @@ Return exactly this JSON shape:
   "features": ["string — shippable, concrete capability"],
   "entities": ["string — the real data objects of this domain"],
   "sampleData": { "domain-specific keys with realistic seed values, names, and numbers": "..." },
+  "designStyle": "one id from the design catalog below that best fits this product's tone",
   "architecture": { "routing": "string", "styling": "string", "backend": "string", "state": "string" }
 }
+
+DESIGN CATALOG — pick the single "designStyle" id whose mood matches the product and the user's requested visual tone:
+${listDesignStyleChoices()}
 
 HARD RULES
 - Exactly 4 to 6 screens. The FIRST screen is the home/hub and must be immediately useful (not a marketing splash).
@@ -1877,6 +1898,8 @@ HARD RULES
 - features must read like a changelog of a shipped app, not a wish list.
 - Use the provided brand colors verbatim and a near-black background.
 - Absolutely no generic filler ("manage everything in one place", "Welcome", "Dashboard" as a standalone screen).
+- Pick a designStyle that genuinely fits — do not default to the same one for every app; match the catalog mood to the domain and requested tone.
+- sampleData numbers must look like a real, in-use account: avoid zeros and empty states as seed values (e.g. show "12 sessions", "$4,820", "7-day streak" — not "0").
 - Output JSON only. No markdown, no comments, no trailing text.`,
   };
 }
@@ -2016,7 +2039,7 @@ export async function executeGenerationPipeline(
     systemPrompt: planPrompt.systemPrompt,
     prompt: planPrompt.prompt,
     maxTokens: 4500,
-    thinkingBudget: 8192,
+    thinkingBudget: 4096,
     responseSchema: appPlanSchema(),
     fallback: fallbackPlan,
     normalize: normalizePlan,
@@ -2028,10 +2051,20 @@ export async function executeGenerationPipeline(
     },
   });
 
+  // Surface the plan as a live "writing" log so the user sees real structure
+  // appear instead of a frozen "planning" label.
+  onNotice?.(`◆ Concept: ${plan.appName}`);
+  onNotice?.(plan.description);
+  onNotice?.(`◆ Design direction: ${plan.designStyle}`);
+  onNotice?.(`◆ Tabs: ${plan.navigation.tabs.join("  ·  ")}`);
+  for (const screen of plan.screens) {
+    onNotice?.(`  ▸ ${screen.title} — ${screen.purpose}`);
+  }
+
   onEvent({
     stage: "screens",
     percent: 32,
-    message: "Generating screens",
+    message: "Designing screens & content",
   });
 
   const screenFallback = fallbackScreenSpecs(plan);
@@ -2079,10 +2112,15 @@ export async function executeGenerationPipeline(
     },
   });
 
+  for (const screen of refinedScreens) {
+    const sectionTypes = screen.sections.map((s) => s.type).join(", ");
+    onNotice?.(`  ✓ ${screen.title}: ${screen.sections.length} sections (${sectionTypes})`);
+  }
+
   onEvent({
     stage: "navigation",
     percent: 56,
-    message: "Creating navigation",
+    message: "Wiring navigation & files",
   });
 
   const manifest = buildFileManifest(refinedScreens);

@@ -11,6 +11,10 @@ import {
   type ProjectPreviewScreen,
   type ProjectPreviewSection,
 } from "@/lib/project-artifacts";
+import {
+  resolveDesignStyle,
+  type DesignStyleTokens,
+} from "@/lib/design-styles";
 
 interface MobilePreviewProps {
   generatedFiles: Record<string, string>;
@@ -141,6 +145,7 @@ export function MobilePreview({
 
   const activeScreen = screens[safeScreenIndex] ?? screens[0];
   const tabs = getTabLabelsFromPreview(preview).slice(0, 5);
+  const style = resolveDesignStyle(preview.designStyle);
 
   return (
     <div
@@ -215,7 +220,7 @@ export function MobilePreview({
           <PhoneFrame
             device={device}
             isUpdating={isUpdating || justUpdated}
-            background={preview.theme.background}
+            background={style.screenBg}
             compact={compact}
           >
             <AnimatePresence mode="wait" initial={false} custom={direction}>
@@ -235,6 +240,7 @@ export function MobilePreview({
                     screen={activeScreen}
                     tabs={tabs}
                     colors={colors}
+                    style={style}
                     onSelectTab={(title) => {
                       const idx = screens.findIndex(
                         (s) => s.title.toLowerCase() === title.toLowerCase(),
@@ -335,12 +341,14 @@ function PreviewScreen({
   screen,
   tabs,
   colors,
+  style,
   onSelectTab,
 }: {
   preview: ProjectPreviewModel;
   screen: ProjectPreviewScreen;
   tabs: string[];
   colors: { primary: string; secondary: string; accent: string };
+  style: DesignStyleTokens;
   onSelectTab?: (title: string) => void;
 }) {
   const sections =
@@ -358,20 +366,29 @@ function PreviewScreen({
   return (
     <div
       className="flex h-full flex-col"
-      style={{
-        background:
-          preview.theme.background ||
-          "linear-gradient(180deg, rgba(18,24,45,1) 0%, rgba(8,11,24,1) 100%)",
-      }}
+      style={{ background: style.screenBg }}
     >
       <div className="px-4 pb-2">
-        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.25em] text-white/55">
+        <div
+          className="flex items-center justify-between text-[10px] uppercase tracking-[0.25em]"
+          style={{ color: style.textMuted }}
+        >
           <span>{preview.appName}</span>
           <span>{screen.title}</span>
         </div>
-        <h3 className="mt-2 text-lg font-semibold text-white">{screen.title}</h3>
+        <h3
+          className={`mt-2 text-lg font-semibold ${
+            style.uppercaseHeadings ? "uppercase tracking-wide" : ""
+          }`}
+          style={{ color: style.textPrimary }}
+        >
+          {screen.title}
+        </h3>
         {screen.subtitle && (
-          <p className="mt-1 text-xs leading-relaxed text-white/65">
+          <p
+            className="mt-1 text-xs leading-relaxed"
+            style={{ color: style.textSecondary }}
+          >
             {screen.subtitle}
           </p>
         )}
@@ -389,12 +406,15 @@ function PreviewScreen({
             key={getSectionKey(section, index)}
             variants={SECTION_ITEM_VARIANTS}
           >
-            <SectionCard section={section} colors={colors} />
+            <SectionCard section={section} colors={colors} style={style} />
           </motion.div>
         ))}
       </motion.div>
 
-      <div className="mt-auto border-t border-white/5 bg-black/30 px-4 py-2.5">
+      <div
+        className="mt-auto border-t px-4 py-2.5"
+        style={{ borderColor: style.divider, background: "rgba(0,0,0,0.18)" }}
+      >
         <div className="flex items-center justify-around">
           {tabs.map((tab, index) => {
             const active =
@@ -413,17 +433,14 @@ function PreviewScreen({
                 <motion.div
                   className="h-2 w-2 rounded-full"
                   animate={{
-                    backgroundColor: active
-                      ? colors.primary
-                      : "rgba(255,255,255,0.22)",
+                    backgroundColor: active ? colors.primary : style.textMuted,
                     scale: active ? 1.25 : 1,
                   }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 />
                 <span
-                  className={`text-[9px] uppercase tracking-wider transition-colors ${
-                    active ? "text-white/85" : "text-white/40"
-                  }`}
+                  className="text-[9px] uppercase tracking-wider transition-colors"
+                  style={{ color: active ? style.textPrimary : style.textMuted }}
                 >
                   {tab}
                 </span>
@@ -439,32 +456,74 @@ function PreviewScreen({
 function SectionCard({
   section,
   colors,
+  style,
 }: {
   section: ProjectPreviewSection;
   colors: { primary: string; secondary: string; accent: string };
+  style: DesignStyleTokens;
 }) {
   const items = getPreviewItems(section.items);
 
+  const cardStyle: React.CSSProperties = {
+    background: style.cardBg,
+    border: `1px solid ${style.cardBorder}`,
+    borderRadius: style.radius,
+  };
+  const headingClass = `text-sm font-semibold ${
+    style.uppercaseHeadings ? "uppercase tracking-wide" : ""
+  }`;
+  const innerTile: React.CSSProperties = {
+    background: "rgba(0,0,0,0.18)",
+    borderRadius: Math.max(10, style.radius - 8),
+  };
+
   if (section.type === "hero") {
+    const heroBg =
+      style.hero === "gradient"
+        ? `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`
+        : style.hero === "solid"
+          ? colors.primary
+          : style.hero === "outline"
+            ? "transparent"
+            : style.cardBg;
+    const isFilled = style.hero === "gradient" || style.hero === "solid";
+    const heroText = isFilled ? "#ffffff" : style.textPrimary;
+    const heroSub = isFilled ? "rgba(255,255,255,0.82)" : style.textSecondary;
     return (
       <div
-        className="relative overflow-hidden rounded-3xl p-4 text-white shadow-xl"
+        className="relative overflow-hidden p-4 shadow-xl"
         style={{
-          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+          background: heroBg,
+          borderRadius: style.radius + 4,
+          border:
+            style.hero === "outline"
+              ? `1.5px solid ${colors.primary}`
+              : style.hero === "glass"
+                ? `1px solid ${style.cardBorder}`
+                : "none",
+          ...(style.hero === "glass" ? { backdropFilter: "blur(8px)" } : {}),
         }}
       >
-        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/20 blur-2xl" />
+        {isFilled && (
+          <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/20 blur-2xl" />
+        )}
         <div className="relative">
-          <div className="text-[10px] uppercase tracking-[0.25em] text-white/70">
+          <div
+            className="text-[10px] uppercase tracking-[0.25em]"
+            style={{ color: isFilled ? "rgba(255,255,255,0.72)" : style.textMuted }}
+          >
             {section.title}
           </div>
           {section.value && (
-            <div className="mt-2 text-3xl font-bold tracking-tight">
+            <div
+              className="mt-2 text-3xl font-bold tracking-tight"
+              style={{ color: heroText }}
+            >
               {section.value}
             </div>
           )}
           {section.body && (
-            <p className="mt-2 text-xs leading-relaxed text-white/85">
+            <p className="mt-2 text-xs leading-relaxed" style={{ color: heroSub }}>
               {section.body}
             </p>
           )}
@@ -473,12 +532,23 @@ function SectionCard({
               {items.slice(0, 3).map((item, index) => (
                 <div
                   key={getPreviewItemKey(section, item, index)}
-                  className="rounded-xl bg-white/15 px-2.5 py-1.5 backdrop-blur"
+                  className="rounded-xl px-2.5 py-1.5"
+                  style={{
+                    background: isFilled
+                      ? "rgba(255,255,255,0.15)"
+                      : "rgba(0,0,0,0.2)",
+                  }}
                 >
-                  <div className="text-[9px] uppercase tracking-wide text-white/70">
+                  <div
+                    className="text-[9px] uppercase tracking-wide"
+                    style={{ color: isFilled ? "rgba(255,255,255,0.72)" : style.textMuted }}
+                  >
                     {getStringField(item, ["label", "title"], "")}
                   </div>
-                  <div className="text-xs font-semibold text-white">
+                  <div
+                    className="text-xs font-semibold"
+                    style={{ color: heroText }}
+                  >
                     {getStringField(item, ["value"], "")}
                   </div>
                 </div>
@@ -493,28 +563,40 @@ function SectionCard({
   if (section.type === "stats") {
     const statItems = items.slice(0, 3);
     return (
-      <div className="rounded-3xl border border-white/6 bg-white/[0.035] p-4">
-        <div className="text-sm font-medium text-white">{section.title}</div>
+      <div className="p-4" style={cardStyle}>
+        <div className={headingClass} style={{ color: style.textPrimary }}>
+          {section.title}
+        </div>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {statItems.length > 0 ? statItems.map((item, index) => (
             <div
               key={getPreviewItemKey(section, item, index)}
-              className="rounded-2xl bg-black/20 p-3"
+              className="p-3"
+              style={innerTile}
             >
-              <div className="text-[10px] uppercase tracking-wide text-white/45">
+              <div
+                className="text-[10px] uppercase tracking-wide"
+                style={{ color: style.textMuted }}
+              >
                 {getStringField(item, ["label", "title"], "Metric")}
               </div>
-              <div className="mt-1 text-sm font-semibold text-white">
+              <div
+                className="mt-1 text-sm font-semibold"
+                style={{ color: style.textPrimary }}
+              >
                 {getStringField(item, ["value", "amount"], "--")}
               </div>
               {"change" in item && (
-                <div className="mt-1 text-[10px] text-emerald-300">
+                <div className="mt-1 text-[10px] text-emerald-400">
                   {String(item.change)}
                 </div>
               )}
             </div>
           )) : (
-            <div className="col-span-3 rounded-2xl bg-black/20 p-3 text-xs text-white/55">
+            <div
+              className="col-span-3 p-3 text-xs"
+              style={{ ...innerTile, color: style.textMuted }}
+            >
               Metrics will appear here when preview data is available.
             </div>
           )}
@@ -524,15 +606,17 @@ function SectionCard({
   }
 
   if (section.type === "chart") {
-    const points = items.slice(0, 5);
+    const points = items.slice(0, 6);
     const maxValue = Math.max(
       1,
       ...points.map((point) => Number(point.value ?? 0)),
     );
 
     return (
-      <div className="rounded-3xl border border-white/6 bg-white/[0.035] p-4">
-        <div className="text-sm font-medium text-white">{section.title}</div>
+      <div className="p-4" style={cardStyle}>
+        <div className={headingClass} style={{ color: style.textPrimary }}>
+          {section.title}
+        </div>
         <div className="mt-4 flex h-28 items-end gap-2">
           {points.length > 0 ? points.map((point, index) => {
             const value = Number(point.value ?? 0);
@@ -554,18 +638,19 @@ function SectionCard({
                   style={{
                     height,
                     background:
-                      index % 2 === 0
-                        ? colors.primary
-                        : colors.secondary,
+                      index % 2 === 0 ? colors.primary : colors.secondary,
                   }}
                 />
-                <span className="text-[10px] text-white/45">
+                <span className="text-[10px]" style={{ color: style.textMuted }}>
                   {getStringField(point, ["label", "title"], "Point")}
                 </span>
               </div>
             );
           }) : (
-            <div className="flex h-full w-full items-center justify-center rounded-2xl bg-black/20 text-xs text-white/50">
+            <div
+              className="flex h-full w-full items-center justify-center text-xs"
+              style={{ ...innerTile, color: style.textMuted }}
+            >
               Chart data is loading for this preview.
             </div>
           )}
@@ -576,18 +661,28 @@ function SectionCard({
 
   if (section.type === "actions") {
     return (
-      <div className="rounded-3xl border border-white/6 bg-white/[0.035] p-4">
-        <div className="text-sm font-medium text-white">{section.title}</div>
+      <div className="p-4" style={cardStyle}>
+        <div className={headingClass} style={{ color: style.textPrimary }}>
+          {section.title}
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {items.length > 0 ? items.slice(0, 4).map((item, index) => (
             <span
               key={getPreviewItemKey(section, item, index)}
-              className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[11px] text-white/80"
+              className="rounded-full px-3 py-1.5 text-[11px] font-medium"
+              style={{
+                background: `${colors.primary}22`,
+                border: `1px solid ${colors.primary}55`,
+                color: style.textPrimary,
+              }}
             >
               {getStringField(item, ["label", "title", "value"], "Action")}
             </span>
           )) : (
-            <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[11px] text-white/55">
+            <span
+              className="rounded-full px-3 py-1.5 text-[11px]"
+              style={{ ...innerTile, color: style.textMuted }}
+            >
               Actions will appear here
             </span>
           )}
@@ -598,15 +693,30 @@ function SectionCard({
 
   if (section.type === "empty") {
     return (
-      <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.02] p-4 text-center">
-        <div className="text-sm font-medium text-white">{section.title}</div>
+      <div
+        className="p-4 text-center"
+        style={{
+          background: "transparent",
+          border: `1px dashed ${style.cardBorder}`,
+          borderRadius: style.radius,
+        }}
+      >
+        <div className={headingClass} style={{ color: style.textPrimary }}>
+          {section.title}
+        </div>
         {section.body && (
-          <p className="mt-2 text-xs leading-relaxed text-white/55">
+          <p
+            className="mt-2 text-xs leading-relaxed"
+            style={{ color: style.textMuted }}
+          >
             {section.body}
           </p>
         )}
         {section.cta && (
-          <div className="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] text-white/80">
+          <div
+            className="mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-medium"
+            style={{ background: `${colors.primary}22`, color: style.textPrimary }}
+          >
             {section.cta}
           </div>
         )}
@@ -615,10 +725,15 @@ function SectionCard({
   }
 
   return (
-    <div className="rounded-3xl border border-white/6 bg-white/[0.035] p-4">
-      <div className="text-sm font-medium text-white">{section.title}</div>
+    <div className="p-4" style={cardStyle}>
+      <div className={headingClass} style={{ color: style.textPrimary }}>
+        {section.title}
+      </div>
       {section.body && (
-        <p className="mt-2 text-xs leading-relaxed text-white/60">
+        <p
+          className="mt-2 text-xs leading-relaxed"
+          style={{ color: style.textSecondary }}
+        >
           {section.body}
         </p>
       )}
@@ -629,35 +744,44 @@ function SectionCard({
           return (
           <div
             key={getPreviewItemKey(section, item, index)}
-            className="flex items-center gap-3 rounded-2xl border border-white/[0.05] bg-black/20 px-3 py-2.5"
+            className="flex items-center gap-3 px-3 py-2.5"
+            style={innerTile}
           >
             <div
               className="h-8 w-8 shrink-0 rounded-xl"
               style={{
-                background: `linear-gradient(135deg, ${colors.primary}40, ${colors.secondary}30)`,
+                background: `linear-gradient(135deg, ${colors.primary}55, ${colors.secondary}40)`,
               }}
             />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-medium text-white">
+              <div
+                className="truncate text-xs font-medium"
+                style={{ color: style.textPrimary }}
+              >
                 {getStringField(item, ["title", "label"], "Item")}
               </div>
               {("subtitle" in item || "meta" in item) && (
-                <div className="truncate text-[10px] text-white/45">
+                <div
+                  className="truncate text-[10px]"
+                  style={{ color: style.textMuted }}
+                >
                   {getStringField(item, ["subtitle", "meta"], "")}
                 </div>
               )}
             </div>
             <div className="flex shrink-0 flex-col items-end">
               {"value" in item && (
-                <div className="text-xs font-semibold text-white">
+                <div
+                  className="text-xs font-semibold"
+                  style={{ color: style.textPrimary }}
+                >
                   {String(item.value)}
                 </div>
               )}
               {change && (
                 <div
-                  className={`text-[10px] font-medium ${
-                    positive ? "text-emerald-300" : "text-white/45"
-                  }`}
+                  className="text-[10px] font-medium"
+                  style={{ color: positive ? "#34d399" : style.textMuted }}
                 >
                   {change}
                 </div>
@@ -666,7 +790,10 @@ function SectionCard({
           </div>
           );
         }) : (
-          <div className="rounded-2xl bg-black/20 px-3 py-2 text-xs text-white/55">
+          <div
+            className="px-3 py-2 text-xs"
+            style={{ ...innerTile, color: style.textMuted }}
+          >
             No items available for this section yet.
           </div>
         )}
